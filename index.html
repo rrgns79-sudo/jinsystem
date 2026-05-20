@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="light scroll-smooth" lang="en" style=""><head>
+<!DOCTYPE html><html class="light scroll-smooth" lang="en"><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>JINSYSTEM | Innovative Solutions</title>
@@ -135,11 +135,12 @@
             opacity: 1;
             transform: translateY(0);
         }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+        .status-pulse {
+            animation: pulse-animation 2s infinite;
+        }
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0px rgba(34, 197, 94, 0.4); }
+            100% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
         }
     </style>
 </head>
@@ -148,11 +149,11 @@
 <header class="bg-surface-lowest/80 backdrop-blur-md dark:bg-inverse-surface/80 w-full top-0 sticky h-[64px] border-b border-outline-variant dark:border-outline shadow-sm z-50">
 <div class="flex justify-between items-center px-margin max-w-[1280px] mx-auto w-full h-full">
 <div class="flex items-center gap-xs">
-<span class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary tracking-tight">JINSYSTEM</span>
+<a class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary tracking-tight" href="/">JINSYSTEM</a>
 </div>
 <nav class="hidden md:flex items-center gap-gutter">
 <a class="nav-link active font-body-sm text-body-sm text-secondary dark:text-secondary-fixed cursor-pointer transition-colors" href="#">Home</a>
-<a class="nav-link font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-secondary transition-colors cursor-pointer" href="#monitoring">Monitoring</a>
+<a class="nav-link font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-secondary transition-colors cursor-pointer" href="{{DATA:SCREEN:SCREEN_3}}">Monitoring</a>
 </nav>
 <div class="flex items-center gap-sm">
 </div>
@@ -160,8 +161,8 @@
 </header>
 <main class="flex-grow">
 <!-- Hero Section -->
-<section class="relative hero-pattern py-xl md:py-[120px] overflow-hidden">
-<div class="max-w-[1280px] mx-auto px-margin grid md:grid-cols-2 gap-xl items-center">
+<section class="relative hero-pattern py-xl md:py-[120px] lg:py-[160px] overflow-hidden min-h-[calc(100vh-64px)] flex items-center">
+<div class="max-w-[1280px] mx-auto px-margin grid md:grid-cols-2 gap-xl items-center w-full">
 <div class="z-10 animate-fade-in">
 <div class="inline-flex items-center gap-xs px-xs py-[2px] bg-secondary-fixed text-on-secondary-fixed rounded-full mb-sm">
 <span class="material-symbols-outlined text-[16px]" data-icon="rocket_launch">rocket_launch</span>
@@ -172,7 +173,7 @@
                 </h1>
 <p class="font-body-lg text-body-lg text-on-surface-variant mb-lg max-w-md">‐ 고정밀 GNSS 위치 정보 기술과 전략적 디지털 전환을 통해 기업의 성장을 지원합니다. 정밀 공학 기술력을 바탕으로 신뢰할 수 있는 최적의 솔루션을 경험해 보세요.</p>
 <div class="flex flex-wrap gap-sm">
-<a class="bg-primary text-on-primary px-lg py-sm rounded-lg font-body-md text-body-md hover:opacity-90 transition-all flex items-center gap-xs shadow-lg active:scale-95" href="#monitoring">
+<a class="bg-primary text-on-primary px-lg py-sm rounded-lg font-body-md text-body-md hover:opacity-90 transition-all flex items-center gap-xs shadow-lg active:scale-95" href="{{DATA:SCREEN:SCREEN_3}}">
                         Get Started
                         <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
 </a>
@@ -194,105 +195,50 @@
 </div>
 </div>
 </section>
-<!-- Quick Access Section -->
-<section class="bg-surface-container py-xl reveal active" id="monitoring">
-<div class="max-w-[1280px] mx-auto px-margin">
-<div class="text-center mb-xl">
-<h2 class="font-headline-lg text-headline-lg text-primary mb-sm">Platform Monitoring</h2>
-<div class="w-16 h-1 bg-secondary mx-auto"></div>
-</div>
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
-<!-- Card 1 -->
-<a class="glass-card rounded-xl p-lg shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group flex flex-col h-full" href="http://112.164.247.109/login" target="_blank">
-<div class="flex justify-between items-start mb-lg">
-<div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary group-hover:bg-secondary group-hover:text-white transition-colors duration-300">
-<span class="material-symbols-outlined text-[28px]" data-icon="lan">lan</span>
-</div>
-<div class="flex items-center gap-xs bg-green-100 px-xs py-[2px] rounded-full">
-<span class="w-2 h-2 bg-green-500 rounded-full"></span>
-<span class="font-label-md text-[10px] text-green-700 font-bold uppercase">Active</span>
-</div>
-</div>
-<h3 class="font-headline-md text-[20px] mb-sm group-hover:text-secondary transition-colors leading-tight">제주 버스 GNSS IoT</h3>
-
-<div class="mt-md flex items-center text-secondary font-label-md opacity-0 group-hover:opacity-100 transition-opacity">
-<span class="">LAUNCH PLATFORM</span>
-<span class="material-symbols-outlined text-sm ml-1">open_in_new</span>
-</div>
-</a>
-<!-- Card 2 -->
-<a class="glass-card rounded-xl p-lg shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group flex flex-col h-full" href="https://www.jeju.go.kr/is/jsgm/login.do" target="_blank">
-<div class="flex justify-between items-start mb-lg">
-<div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary group-hover:bg-secondary group-hover:text-white transition-colors duration-300">
-<span class="material-symbols-outlined text-[28px]" data-icon="location_city">location_city</span>
-</div>
-<div class="flex items-center gap-xs bg-green-100 px-xs py-[2px] rounded-full">
-<span class="w-2 h-2 bg-green-500 rounded-full"></span>
-<span class="font-label-md text-[10px] text-green-700 font-bold uppercase">Active</span>
-</div>
-</div>
-<h3 class="font-headline-md text-[20px] mb-sm group-hover:text-secondary transition-colors leading-tight">스마트그린 청소차량</h3>
-
-<div class="mt-md flex items-center text-secondary font-label-md opacity-0 group-hover:opacity-100 transition-opacity">
-<span class="">LAUNCH PLATFORM</span>
-<span class="material-symbols-outlined text-sm ml-1">open_in_new</span>
-</div>
-</a>
-<!-- Card 3 -->
-<a class="glass-card rounded-xl p-lg shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group flex flex-col h-full" href="http://jejusnow.vireyi.kr:8071" target="_blank">
-<div class="flex justify-between items-start mb-lg">
-<div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary group-hover:bg-secondary group-hover:text-white transition-colors duration-300">
-<span class="material-symbols-outlined text-[28px]" data-icon="ac_unit">ac_unit</span>
-</div>
-<div class="flex items-center gap-xs bg-green-100 px-xs py-[2px] rounded-full">
-<span class="w-2 h-2 bg-green-500 rounded-full"></span>
-<span class="font-label-md text-[10px] text-green-700 font-bold uppercase">Active</span>
-</div>
-</div>
-<h3 class="font-headline-md text-[20px] mb-sm group-hover:text-secondary transition-colors leading-tight">제주 제설 관제</h3>
-
-<div class="mt-md flex items-center text-secondary font-label-md opacity-0 group-hover:opacity-100 transition-opacity">
-<span class="">LAUNCH PLATFORM</span>
-<span class="material-symbols-outlined text-sm ml-1">open_in_new</span>
-</div>
-</a>
-<!-- Card 4 -->
-<a class="glass-card rounded-xl p-lg shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group flex flex-col h-full" href="https://jin.ultrartk.com/ultraRtk/login" target="_blank">
-<div class="flex justify-between items-start mb-lg">
-<div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary group-hover:bg-secondary group-hover:text-white transition-colors duration-300">
-<span class="material-symbols-outlined text-[28px]" data-icon="satellite_alt">satellite_alt</span>
-</div>
-<div class="flex items-center gap-xs bg-green-100 px-xs py-[2px] rounded-full">
-<span class="w-2 h-2 bg-green-500 rounded-full"></span>
-<span class="font-label-md text-[10px] text-green-700 font-bold uppercase">Active</span>
-</div>
-</div>
-<h3 class="font-headline-md text-[20px] mb-sm group-hover:text-secondary transition-colors leading-tight">Ultra RTK</h3>
-
-<div class="mt-md flex items-center text-secondary font-label-md opacity-0 group-hover:opacity-100 transition-opacity">
-<span class="">LAUNCH PLATFORM</span>
-<span class="material-symbols-outlined text-sm ml-1">open_in_new</span>
-</div>
-</a>
-</div>
-</div>
-</section>
+<!-- Monitoring Section Integrated -->
 </main>
-<!-- Footer Placeholder -->
+<!-- Footer -->
 <footer class="bg-surface-container py-md border-t border-outline-variant">
 <div class="max-w-[1280px] mx-auto px-margin text-center">
-<p class="font-label-md text-on-surface-variant opacity-60">© 2024 JINSYSTEM. All rights reserved.</p>
+<p class="font-label-md text-on-surface-variant opacity-60">© 2018 JINSYSTEM. All rights reserved.</p>
 </div>
 </footer>
 <script>
-    // Navigation active state management
+    // Navigation active state management and smooth scroll
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
-        link.addEventListener('click', () => {
+        link.addEventListener('click', (e) => {
+            const href = link.getAttribute('href');
+            if (href.startsWith('#')) {
+                e.preventDefault();
+                const targetId = href.substring(1);
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    const headerHeight = 64;
+                    const offsetPosition = targetElement.offsetTop - headerHeight;
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: "smooth"
+                    });
+                }
+            }
+            
             navLinks.forEach(l => l.classList.remove('active', 'text-secondary'));
             navLinks.forEach(l => l.classList.add('text-on-surface-variant'));
             link.classList.add('active', 'text-secondary');
             link.classList.remove('text-on-surface-variant');
+        });
+    });
+
+    // Handle "Get Started" smooth scroll
+    document.querySelector('a[href="#monitoring-section"]').addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetElement = document.getElementById('monitoring-section');
+        const headerHeight = 64;
+        const offsetPosition = targetElement.offsetTop - headerHeight;
+        window.scrollTo({
+            top: offsetPosition,
+            behavior: "smooth"
         });
     });
 
@@ -310,16 +256,28 @@
     }
     window.addEventListener("scroll", reveal);
     
-    // Initial call for hero or above-the-fold content if needed
+    // Initial call
     reveal();
 
     // Button micro-interactions
-    document.querySelectorAll('a').forEach(el => {
+    document.querySelectorAll('a, button').forEach(el => {
         el.addEventListener('mousedown', () => {
-            el.style.transform = el.classList.contains('glass-card') ? 'scale(0.98)' : 'scale(0.95)';
+            el.style.transform = 'scale(0.95)';
         });
         el.addEventListener('mouseup', () => {
             el.style.transform = '';
+        });
+    });
+
+    // Status pulse speed up on hover
+    document.querySelectorAll('.group').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            const pulse = card.querySelector('.status-pulse');
+            if (pulse) pulse.style.animationDuration = '1s';
+        });
+        card.addEventListener('mouseleave', () => {
+            const pulse = card.querySelector('.status-pulse');
+            if (pulse) pulse.style.animationDuration = '2s';
         });
     });
 </script>
