@@ -240,6 +240,10 @@
 
   function openAdminModal(e) {
     e.preventDefault();
+    if (sessionStorage.getItem('jinsystem_admin') === 'true') {
+      window.location.href = 'admin.html';
+      return;
+    }
     document.getElementById('admin-modal').classList.remove('hidden');
     document.getElementById('admin-password').value = '';
     document.getElementById('admin-error').classList.add('hidden');
@@ -253,6 +257,7 @@
   function checkPassword() {
     const input = document.getElementById('admin-password').value;
     if (input === ADMIN_PASSWORD) {
+      sessionStorage.setItem('jinsystem_admin', 'true');
       window.location.href = 'admin.html';
     } else {
       document.getElementById('admin-error').classList.remove('hidden');

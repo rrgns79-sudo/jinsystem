@@ -408,7 +408,10 @@
     renderFooter();
   }
 
-  function logout() { window.location.href = 'index.html'; }
+  function logout() {
+    sessionStorage.removeItem('jinsystem_admin');
+    window.location.href = 'index.html';
+  }
 
   renderCards();
   renderFooter();
