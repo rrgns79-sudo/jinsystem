@@ -1,0 +1,297 @@
+<!DOCTYPE html><html class="light scroll-smooth" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>JINSYSTEM | Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "background": "#f7f9fb", "secondary-container": "#316bf3", "secondary": "#0051d5",
+          "inverse-primary": "#bec6e0", "primary": "#000000", "outline-variant": "#c6c6cd",
+          "on-surface-variant": "#45464d", "surface-container": "#eceef0", "on-surface": "#191c1e",
+          "surface": "#f7f9fb", "secondary-fixed": "#dbe1ff", "on-secondary-fixed": "#00174b",
+          "on-primary": "#ffffff", "outline": "#76777d"
+        },
+        borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+        spacing: { "md": "24px", "gutter": "24px", "sm": "16px", "lg": "40px", "xs": "8px", "xl": "64px", "margin": "32px" },
+        fontFamily: { "body-md": ["Inter"], "headline-md": ["Inter"], "body-sm": ["Inter"], "body-lg": ["Inter"], "label-md": ["Inter"], "headline-lg": ["Inter"] },
+        fontSize: {
+          "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+          "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+          "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+          "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+          "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+          "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { background-color: #f7f9fb; font-family: 'Inter', sans-serif; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  .nav-link { position: relative; padding-bottom: 4px; }
+  .nav-link::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background-color: currentColor; transition: width 0.3s ease; }
+  .nav-link:hover::after, .nav-link.active::after { width: 100%; }
+  .modal-overlay { backdrop-filter: blur(4px); }
+</style>
+</head>
+<body class="text-on-surface flex flex-col min-h-screen">
+
+<!-- TopNavBar -->
+<header class="bg-white/80 backdrop-blur-md w-full top-0 sticky h-[64px] border-b border-outline-variant shadow-sm z-50">
+  <div class="flex justify-between items-center px-margin max-w-[1280px] mx-auto w-full h-full">
+    <a href="index.html" class="font-headline-md text-headline-md font-bold text-primary tracking-tight">JINSYSTEM</a>
+    <nav class="hidden md:flex items-center gap-gutter">
+      <a class="nav-link font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="index.html">Home</a>
+      <a class="nav-link font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-colors" href="monitoring.html">Monitoring</a>
+      <a class="nav-link active font-body-sm text-body-sm text-secondary transition-colors" href="admin.html">Admin</a>
+    </nav>
+    <button onclick="logout()" class="flex items-center gap-xs font-body-sm text-body-sm text-on-surface-variant hover:text-red-500 transition-colors">
+      <span class="material-symbols-outlined text-[18px]">logout</span>
+      로그아웃
+    </button>
+  </div>
+</header>
+
+<main class="flex-grow">
+  <section class="py-xl">
+    <div class="max-w-[1280px] mx-auto px-margin">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-xl">
+        <div>
+          <div class="inline-flex items-center gap-xs px-xs py-[2px] bg-secondary-fixed text-on-secondary-fixed rounded-full mb-sm">
+            <span class="material-symbols-outlined text-[16px]">admin_panel_settings</span>
+            <span class="font-label-md text-label-md uppercase tracking-wider">관리자 페이지</span>
+          </div>
+          <h1 class="font-headline-lg text-headline-lg text-primary mt-sm">플랫폼 카드 관리</h1>
+          <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">카드 상태, 링크, 이름을 관리할 수 있습니다.</p>
+        </div>
+        <button onclick="openAddModal()" class="flex items-center gap-xs bg-primary text-on-primary px-sm py-xs rounded-lg font-body-sm text-body-sm hover:opacity-90 transition-all active:scale-95 shadow-sm">
+          <span class="material-symbols-outlined text-[18px]">add</span>
+          카드 추가
+        </button>
+      </div>
+
+      <!-- Cards Grid -->
+      <div id="cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter"></div>
+
+    </div>
+  </section>
+</main>
+
+<!-- Footer -->
+<footer class="bg-surface-container py-md border-t border-outline-variant">
+  <div class="max-w-[1280px] mx-auto px-margin text-center">
+    <p class="font-label-md text-on-surface-variant opacity-60">© 2024 JINSYSTEM. All rights reserved.</p>
+  </div>
+</footer>
+
+<!-- Edit Modal -->
+<div id="edit-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 modal-overlay hidden">
+  <div class="bg-white rounded-xl shadow-2xl p-lg w-full max-w-sm mx-margin border border-outline-variant">
+    <div class="flex items-center justify-between mb-md">
+      <h3 class="font-headline-md text-headline-md text-primary">카드 수정</h3>
+      <button onclick="closeEditModal()" class="text-on-surface-variant hover:text-primary transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="flex flex-col gap-sm">
+      <div>
+        <label class="font-label-md text-label-md text-on-surface-variant mb-xs block">카드 이름</label>
+        <input id="edit-name" type="text" class="w-full border border-outline-variant rounded-lg px-sm py-xs font-body-sm text-body-sm focus:outline-none focus:border-secondary">
+      </div>
+      <div>
+        <label class="font-label-md text-label-md text-on-surface-variant mb-xs block">링크 URL</label>
+        <input id="edit-url" type="text" class="w-full border border-outline-variant rounded-lg px-sm py-xs font-body-sm text-body-sm focus:outline-none focus:border-secondary">
+      </div>
+      <div>
+        <label class="font-label-md text-label-md text-on-surface-variant mb-xs block">아이콘</label>
+        <input id="edit-icon" type="text" class="w-full border border-outline-variant rounded-lg px-sm py-xs font-body-sm text-body-sm focus:outline-none focus:border-secondary" placeholder="예: lan, satellite_alt, ac_unit">
+        <p class="font-label-md text-[11px] text-on-surface-variant opacity-60 mt-[4px]">Material Symbols 아이콘 이름을 입력하세요</p>
+      </div>
+    </div>
+    <div class="flex gap-sm mt-lg">
+      <button onclick="closeEditModal()" class="flex-1 border border-outline-variant text-on-surface-variant py-xs rounded-lg font-body-sm text-body-sm hover:bg-surface-container transition-all">취소</button>
+      <button onclick="saveEdit()" class="flex-1 bg-primary text-on-primary py-xs rounded-lg font-body-sm text-body-sm hover:opacity-90 transition-all active:scale-95">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Modal -->
+<div id="add-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 modal-overlay hidden">
+  <div class="bg-white rounded-xl shadow-2xl p-lg w-full max-w-sm mx-margin border border-outline-variant">
+    <div class="flex items-center justify-between mb-md">
+      <h3 class="font-headline-md text-headline-md text-primary">카드 추가</h3>
+      <button onclick="closeAddModal()" class="text-on-surface-variant hover:text-primary transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="flex flex-col gap-sm">
+      <div>
+        <label class="font-label-md text-label-md text-on-surface-variant mb-xs block">카드 이름</label>
+        <input id="add-name" type="text" class="w-full border border-outline-variant rounded-lg px-sm py-xs font-body-sm text-body-sm focus:outline-none focus:border-secondary" placeholder="예: 제주IoT">
+      </div>
+      <div>
+        <label class="font-label-md text-label-md text-on-surface-variant mb-xs block">링크 URL</label>
+        <input id="add-url" type="text" class="w-full border border-outline-variant rounded-lg px-sm py-xs font-body-sm text-body-sm focus:outline-none focus:border-secondary" placeholder="https://...">
+      </div>
+      <div>
+        <label class="font-label-md text-label-md text-on-surface-variant mb-xs block">아이콘</label>
+        <input id="add-icon" type="text" class="w-full border border-outline-variant rounded-lg px-sm py-xs font-body-sm text-body-sm focus:outline-none focus:border-secondary" placeholder="예: lan, satellite_alt, ac_unit">
+        <p class="font-label-md text-[11px] text-on-surface-variant opacity-60 mt-[4px]">Material Symbols 아이콘 이름을 입력하세요</p>
+      </div>
+    </div>
+    <div class="flex gap-sm mt-lg">
+      <button onclick="closeAddModal()" class="flex-1 border border-outline-variant text-on-surface-variant py-xs rounded-lg font-body-sm text-body-sm hover:bg-surface-container transition-all">취소</button>
+      <button onclick="saveAdd()" class="flex-1 bg-primary text-on-primary py-xs rounded-lg font-body-sm text-body-sm hover:opacity-90 transition-all active:scale-95">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 modal-overlay hidden">
+  <div class="bg-white rounded-xl shadow-2xl p-lg w-full max-w-sm mx-margin border border-outline-variant">
+    <div class="flex items-center gap-sm mb-md">
+      <span class="material-symbols-outlined text-red-500">warning</span>
+      <h3 class="font-headline-md text-headline-md text-primary">카드 삭제</h3>
+    </div>
+    <p class="font-body-sm text-body-sm text-on-surface-variant mb-lg">정말로 이 카드를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+    <div class="flex gap-sm">
+      <button onclick="closeDeleteModal()" class="flex-1 border border-outline-variant text-on-surface-variant py-xs rounded-lg font-body-sm text-body-sm hover:bg-surface-container transition-all">취소</button>
+      <button onclick="confirmDelete()" class="flex-1 bg-red-500 text-white py-xs rounded-lg font-body-sm text-body-sm hover:bg-red-600 transition-all active:scale-95">삭제</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let cards = [
+    { id: 1, name: '제주 버스 GNSS IoT', url: 'http://112.164.247.109/login', icon: 'lan', active: true },
+    { id: 2, name: '스마트그린 청소차량', url: 'https://www.jeju.go.kr/is/jsgm/login.do', icon: 'location_city', active: true },
+    { id: 3, name: '제주 제설 관제', url: 'http://jejusnow.vireyi.kr:8071', icon: 'ac_unit', active: true },
+    { id: 4, name: 'Ultra RTK', url: 'https://jin.ultrartk.com/ultraRtk/login', icon: 'satellite_alt', active: true },
+  ];
+
+  let editingId = null;
+  let deletingId = null;
+
+  function renderCards() {
+    const grid = document.getElementById('cards-grid');
+    if (cards.length === 0) {
+      grid.innerHTML = `
+        <div class="col-span-4 bg-white border border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center text-center min-h-[200px] gap-md">
+          <span class="material-symbols-outlined text-[48px] text-on-surface-variant opacity-30">inbox</span>
+          <p class="font-body-sm text-body-sm text-on-surface-variant opacity-50">카드가 없습니다. 카드를 추가해 주세요.</p>
+        </div>`;
+      return;
+    }
+    grid.innerHTML = cards.map(card => `
+      <div class="bg-white rounded-xl border border-outline-variant shadow-sm p-lg flex flex-col gap-md transition-all duration-300 ${!card.active ? 'opacity-50' : ''}">
+        <div class="flex justify-between items-start">
+          <div class="w-12 h-12 rounded-full ${card.active ? 'bg-blue-50 text-secondary' : 'bg-surface-container text-on-surface-variant'} flex items-center justify-center transition-colors">
+            <span class="material-symbols-outlined text-[28px]">${card.icon}</span>
+          </div>
+          <div class="flex items-center gap-xs">
+            <span class="font-label-md text-[10px] ${card.active ? 'text-green-600' : 'text-on-surface-variant'} font-bold uppercase">${card.active ? 'Active' : 'Inactive'}</span>
+            <button onclick="toggleActive(${card.id})" class="relative inline-flex items-center w-10 h-5 rounded-full transition-colors duration-300 ${card.active ? 'bg-secondary' : 'bg-gray-300'}">
+              <span class="inline-block w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-300 ${card.active ? 'translate-x-5' : 'translate-x-1'}"></span>
+            </button>
+          </div>
+        </div>
+        <h3 class="font-headline-md text-[18px] text-primary leading-tight">${card.name}</h3>
+        <p class="font-label-md text-[11px] text-on-surface-variant opacity-60 truncate">${card.url}</p>
+        <div class="flex gap-xs mt-auto pt-sm border-t border-outline-variant">
+          <button onclick="openEditModal(${card.id})" class="flex-1 flex items-center justify-center gap-xs border border-outline-variant text-on-surface-variant py-xs rounded-lg font-body-sm text-[13px] hover:bg-surface-container hover:text-secondary transition-all">
+            <span class="material-symbols-outlined text-[16px]">edit</span>
+            수정
+          </button>
+          <button onclick="openDeleteModal(${card.id})" class="flex-1 flex items-center justify-center gap-xs border border-red-200 text-red-400 py-xs rounded-lg font-body-sm text-[13px] hover:bg-red-50 hover:text-red-600 transition-all">
+            <span class="material-symbols-outlined text-[16px]">delete</span>
+            삭제
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function toggleActive(id) {
+    cards = cards.map(c => c.id === id ? { ...c, active: !c.active } : c);
+    renderCards();
+  }
+
+  function openEditModal(id) {
+    editingId = id;
+    const card = cards.find(c => c.id === id);
+    document.getElementById('edit-name').value = card.name;
+    document.getElementById('edit-url').value = card.url;
+    document.getElementById('edit-icon').value = card.icon;
+    document.getElementById('edit-modal').classList.remove('hidden');
+  }
+  function closeEditModal() {
+    document.getElementById('edit-modal').classList.add('hidden');
+    editingId = null;
+  }
+  function saveEdit() {
+    const name = document.getElementById('edit-name').value.trim();
+    const url = document.getElementById('edit-url').value.trim();
+    const icon = document.getElementById('edit-icon').value.trim();
+    if (!name || !url || !icon) { alert('모든 항목을 입력해 주세요.'); return; }
+    cards = cards.map(c => c.id === editingId ? { ...c, name, url, icon } : c);
+    closeEditModal();
+    renderCards();
+  }
+
+  function openAddModal() {
+    document.getElementById('add-name').value = '';
+    document.getElementById('add-url').value = '';
+    document.getElementById('add-icon').value = '';
+    document.getElementById('add-modal').classList.remove('hidden');
+  }
+  function closeAddModal() {
+    document.getElementById('add-modal').classList.add('hidden');
+  }
+  function saveAdd() {
+    const name = document.getElementById('add-name').value.trim();
+    const url = document.getElementById('add-url').value.trim();
+    const icon = document.getElementById('add-icon').value.trim() || 'link';
+    if (!name || !url) { alert('이름과 링크를 입력해 주세요.'); return; }
+    const newId = cards.length > 0 ? Math.max(...cards.map(c => c.id)) + 1 : 1;
+    cards.push({ id: newId, name, url, icon, active: true });
+    closeAddModal();
+    renderCards();
+  }
+
+  function openDeleteModal(id) {
+    deletingId = id;
+    document.getElementById('delete-modal').classList.remove('hidden');
+  }
+  function closeDeleteModal() {
+    document.getElementById('delete-modal').classList.add('hidden');
+    deletingId = null;
+  }
+  function confirmDelete() {
+    cards = cards.filter(c => c.id !== deletingId);
+    closeDeleteModal();
+    renderCards();
+  }
+
+  ['edit-modal', 'add-modal', 'delete-modal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) {
+      if (e.target === this) {
+        this.classList.add('hidden');
+        editingId = null; deletingId = null;
+      }
+    });
+  });
+
+  function logout() { window.location.href = 'index.html'; }
+
+  renderCards();
+</script>
+</body></html>

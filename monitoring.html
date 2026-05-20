@@ -139,6 +139,7 @@
   <nav class="hidden md:flex items-center gap-gutter">
     <a class="nav-link font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-secondary transition-colors cursor-pointer" href="index.html">Home</a>
     <a class="nav-link active font-body-sm text-body-sm text-secondary dark:text-secondary-fixed cursor-pointer transition-colors" href="monitoring.html">Monitoring</a>
+    <a class="nav-link font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-secondary transition-colors cursor-pointer" href="#" onclick="openAdminModal(event)">Admin</a>
   </nav>
   <div class="flex items-center gap-sm"></div>
 </div>
@@ -230,4 +231,57 @@
   <p class="font-label-md text-on-surface-variant opacity-60">© 2024 JINSYSTEM. All rights reserved.</p>
 </div>
 </footer>
+<!-- Admin Password Modal -->
+<div id="admin-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm hidden">
+  <div class="bg-white rounded-xl shadow-2xl p-lg w-full max-w-sm mx-margin border border-outline-variant">
+    <div class="flex items-center justify-between mb-md">
+      <h3 class="font-headline-md text-headline-md text-primary">관리자 인증</h3>
+      <button onclick="closeAdminModal()" class="text-on-surface-variant hover:text-primary transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <p class="font-body-sm text-body-sm text-on-surface-variant mb-md">관리자 페이지에 접근하려면 비밀번호를 입력하세요.</p>
+    <input
+      id="admin-password"
+      type="password"
+      placeholder="비밀번호 입력"
+      class="w-full border border-outline-variant rounded-lg px-sm py-sm font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-secondary mb-xs"
+      onkeydown="if(event.key==='Enter') checkPassword()"
+    >
+    <p id="admin-error" class="font-body-sm text-[12px] text-red-500 mb-sm hidden">비밀번호가 올바르지 않습니다.</p>
+    <button onclick="checkPassword()" class="w-full bg-primary text-on-primary py-sm rounded-lg font-body-md text-body-md hover:opacity-90 transition-all active:scale-95 mt-xs">
+      확인
+    </button>
+  </div>
+</div>
+<script>
+  const ADMIN_PASSWORD = 'admin1234';
+
+  function openAdminModal(e) {
+    e.preventDefault();
+    document.getElementById('admin-modal').classList.remove('hidden');
+    document.getElementById('admin-password').value = '';
+    document.getElementById('admin-error').classList.add('hidden');
+    setTimeout(() => document.getElementById('admin-password').focus(), 100);
+  }
+
+  function closeAdminModal() {
+    document.getElementById('admin-modal').classList.add('hidden');
+  }
+
+  function checkPassword() {
+    const input = document.getElementById('admin-password').value;
+    if (input === ADMIN_PASSWORD) {
+      window.location.href = 'admin.html';
+    } else {
+      document.getElementById('admin-error').classList.remove('hidden');
+      document.getElementById('admin-password').value = '';
+      document.getElementById('admin-password').focus();
+    }
+  }
+
+  document.getElementById('admin-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeAdminModal();
+  });
+</script>
 </body></html>
