@@ -152,76 +152,7 @@
     <h2 class="font-headline-lg text-headline-lg text-primary mb-sm">Platform Monitoring</h2>
     <div class="w-16 h-1 bg-secondary mx-auto"></div>
   </div>
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
-    <!-- Card 1 -->
-    <a class="glass-card rounded-xl p-lg shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group flex flex-col h-full" href="http://112.164.247.109/login" target="_blank">
-      <div class="flex justify-between items-start mb-lg">
-        <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary group-hover:bg-secondary group-hover:text-white transition-colors duration-300">
-          <span class="material-symbols-outlined text-[28px]" data-icon="lan">lan</span>
-        </div>
-        <div class="flex items-center gap-xs bg-green-100 px-xs py-[2px] rounded-full">
-          <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-          <span class="font-label-md text-[10px] text-green-700 font-bold uppercase">Active</span>
-        </div>
-      </div>
-      <h3 class="font-headline-md text-[20px] mb-sm group-hover:text-secondary transition-colors leading-tight">제주 버스 GNSS IoT</h3>
-      <div class="mt-md flex items-center text-secondary font-label-md opacity-0 group-hover:opacity-100 transition-opacity">
-        <span>LAUNCH PLATFORM</span>
-        <span class="material-symbols-outlined text-sm ml-1">open_in_new</span>
-      </div>
-    </a>
-    <!-- Card 2 -->
-    <a class="glass-card rounded-xl p-lg shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group flex flex-col h-full" href="https://www.jeju.go.kr/is/jsgm/login.do" target="_blank">
-      <div class="flex justify-between items-start mb-lg">
-        <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary group-hover:bg-secondary group-hover:text-white transition-colors duration-300">
-          <span class="material-symbols-outlined text-[28px]" data-icon="location_city">location_city</span>
-        </div>
-        <div class="flex items-center gap-xs bg-green-100 px-xs py-[2px] rounded-full">
-          <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-          <span class="font-label-md text-[10px] text-green-700 font-bold uppercase">Active</span>
-        </div>
-      </div>
-      <h3 class="font-headline-md text-[20px] mb-sm group-hover:text-secondary transition-colors leading-tight">스마트그린 청소차량</h3>
-      <div class="mt-md flex items-center text-secondary font-label-md opacity-0 group-hover:opacity-100 transition-opacity">
-        <span>LAUNCH PLATFORM</span>
-        <span class="material-symbols-outlined text-sm ml-1">open_in_new</span>
-      </div>
-    </a>
-    <!-- Card 3 -->
-    <a class="glass-card rounded-xl p-lg shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group flex flex-col h-full" href="http://jejusnow.vireyi.kr:8071" target="_blank">
-      <div class="flex justify-between items-start mb-lg">
-        <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary group-hover:bg-secondary group-hover:text-white transition-colors duration-300">
-          <span class="material-symbols-outlined text-[28px]" data-icon="ac_unit">ac_unit</span>
-        </div>
-        <div class="flex items-center gap-xs bg-green-100 px-xs py-[2px] rounded-full">
-          <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-          <span class="font-label-md text-[10px] text-green-700 font-bold uppercase">Active</span>
-        </div>
-      </div>
-      <h3 class="font-headline-md text-[20px] mb-sm group-hover:text-secondary transition-colors leading-tight">제주 제설 관제</h3>
-      <div class="mt-md flex items-center text-secondary font-label-md opacity-0 group-hover:opacity-100 transition-opacity">
-        <span>LAUNCH PLATFORM</span>
-        <span class="material-symbols-outlined text-sm ml-1">open_in_new</span>
-      </div>
-    </a>
-    <!-- Card 4 -->
-    <a class="glass-card rounded-xl p-lg shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group flex flex-col h-full" href="https://jin.ultrartk.com/ultraRtk/login" target="_blank">
-      <div class="flex justify-between items-start mb-lg">
-        <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary group-hover:bg-secondary group-hover:text-white transition-colors duration-300">
-          <span class="material-symbols-outlined text-[28px]" data-icon="satellite_alt">satellite_alt</span>
-        </div>
-        <div class="flex items-center gap-xs bg-green-100 px-xs py-[2px] rounded-full">
-          <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-          <span class="font-label-md text-[10px] text-green-700 font-bold uppercase">Active</span>
-        </div>
-      </div>
-      <h3 class="font-headline-md text-[20px] mb-sm group-hover:text-secondary transition-colors leading-tight">Ultra RTK</h3>
-      <div class="mt-md flex items-center text-secondary font-label-md opacity-0 group-hover:opacity-100 transition-opacity">
-        <span>LAUNCH PLATFORM</span>
-        <span class="material-symbols-outlined text-sm ml-1">open_in_new</span>
-      </div>
-    </a>
-  </div>
+  <div id="monitoring-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter"></div>
 </div>
 </section>
 </main>
@@ -231,7 +162,44 @@
   <p class="font-label-md text-on-surface-variant opacity-60">© 2024 JINSYSTEM. All rights reserved.</p>
 </div>
 </footer>
-<!-- Admin Password Modal -->
+<!-- Monitoring Card Render -->
+<script>
+  const DEFAULT_CARDS = [
+    { id: 1, name: '제주 버스 GNSS IoT', url: 'http://112.164.247.109/login', icon: 'lan', active: true },
+    { id: 2, name: '스마트그린 청소차량', url: 'https://www.jeju.go.kr/is/jsgm/login.do', icon: 'location_city', active: true },
+    { id: 3, name: '제주 제설 관제', url: 'http://jejusnow.vireyi.kr:8071', icon: 'ac_unit', active: true },
+    { id: 4, name: 'Ultra RTK', url: 'https://jin.ultrartk.com/ultraRtk/login', icon: 'satellite_alt', active: true },
+  ];
+
+  function renderMonitoringCards() {
+    const saved = localStorage.getItem('jinsystem_cards');
+    const cards = saved ? JSON.parse(saved) : DEFAULT_CARDS;
+    const grid = document.getElementById('monitoring-grid');
+
+    grid.innerHTML = cards.map(card => `
+      <a class="glass-card rounded-xl p-lg shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group flex flex-col h-full ${!card.active ? 'opacity-40 pointer-events-none' : ''}"
+         href="${card.url}" target="_blank">
+        <div class="flex justify-between items-start mb-lg">
+          <div class="w-12 h-12 rounded-full ${card.active ? 'bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-white' : 'bg-gray-100 text-gray-400'} flex items-center justify-center transition-colors duration-300">
+            <span class="material-symbols-outlined text-[28px]">${card.icon}</span>
+          </div>
+          <div class="flex items-center gap-xs ${card.active ? 'bg-green-100' : 'bg-gray-100'} px-xs py-[2px] rounded-full">
+            <span class="w-2 h-2 ${card.active ? 'bg-green-500' : 'bg-gray-400'} rounded-full"></span>
+            <span class="font-label-md text-[10px] ${card.active ? 'text-green-700' : 'text-gray-500'} font-bold uppercase">${card.active ? 'Active' : 'Inactive'}</span>
+          </div>
+        </div>
+        <h3 class="font-headline-md text-[20px] mb-sm ${card.active ? 'group-hover:text-secondary' : ''} transition-colors leading-tight">${card.name}</h3>
+        <div class="mt-md flex items-center text-secondary font-label-md ${card.active ? 'opacity-0 group-hover:opacity-100' : 'hidden'} transition-opacity">
+          <span>LAUNCH PLATFORM</span>
+          <span class="material-symbols-outlined text-sm ml-1">open_in_new</span>
+        </div>
+      </a>
+    `).join('');
+  }
+
+  renderMonitoringCards();
+</script>
+
 <div id="admin-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm hidden">
   <div class="bg-white rounded-xl shadow-2xl p-lg w-full max-w-sm mx-margin border border-outline-variant">
     <div class="flex items-center justify-between mb-md">

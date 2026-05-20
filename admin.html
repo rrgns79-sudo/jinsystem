@@ -116,6 +116,10 @@
         <input id="edit-icon" type="text" class="w-full border border-outline-variant rounded-lg px-sm py-xs font-body-sm text-body-sm focus:outline-none focus:border-secondary" placeholder="예: lan, satellite_alt, ac_unit">
         <p class="font-label-md text-[11px] text-on-surface-variant opacity-60 mt-[4px]">Material Symbols 아이콘 이름을 입력하세요</p>
       </div>
+      <div>
+        <label class="font-label-md text-label-md text-on-surface-variant mb-xs block">메모</label>
+        <textarea id="edit-memo" rows="3" class="w-full border border-outline-variant rounded-lg px-sm py-xs font-body-sm text-body-sm focus:outline-none focus:border-secondary resize-none" placeholder="메모를 입력하세요"></textarea>
+      </div>
     </div>
     <div class="flex gap-sm mt-lg">
       <button onclick="closeEditModal()" class="flex-1 border border-outline-variant text-on-surface-variant py-xs rounded-lg font-body-sm text-body-sm hover:bg-surface-container transition-all">취소</button>
@@ -171,12 +175,20 @@
 </div>
 
 <script>
-  let cards = [
+  const DEFAULT_CARDS = [
     { id: 1, name: '제주 버스 GNSS IoT', url: 'http://112.164.247.109/login', icon: 'lan', active: true },
     { id: 2, name: '스마트그린 청소차량', url: 'https://www.jeju.go.kr/is/jsgm/login.do', icon: 'location_city', active: true },
     { id: 3, name: '제주 제설 관제', url: 'http://jejusnow.vireyi.kr:8071', icon: 'ac_unit', active: true },
     { id: 4, name: 'Ultra RTK', url: 'https://jin.ultrartk.com/ultraRtk/login', icon: 'satellite_alt', active: true },
   ];
+  function loadCards() {
+    const saved = localStorage.getItem('jinsystem_cards');
+    return saved ? JSON.parse(saved) : DEFAULT_CARDS;
+  }
+  function saveCards() {
+    localStorage.setItem('jinsystem_cards', JSON.stringify(cards));
+  }
+  let cards = loadCards();
 
   let editingId = null;
   let deletingId = null;
@@ -206,6 +218,7 @@
         </div>
         <h3 class="font-headline-md text-[18px] text-primary leading-tight">${card.name}</h3>
         <p class="font-label-md text-[11px] text-on-surface-variant opacity-60 truncate">${card.url}</p>
+        ${card.memo ? `<p class="font-body-sm text-[12px] text-on-surface-variant bg-surface-container rounded-lg px-xs py-[6px] leading-relaxed">${card.memo}</p>` : ''}
         <div class="flex gap-xs mt-auto pt-sm border-t border-outline-variant">
           <button onclick="openEditModal(${card.id})" class="flex-1 flex items-center justify-center gap-xs border border-outline-variant text-on-surface-variant py-xs rounded-lg font-body-sm text-[13px] hover:bg-surface-container hover:text-secondary transition-all">
             <span class="material-symbols-outlined text-[16px]">edit</span>
@@ -222,6 +235,7 @@
 
   function toggleActive(id) {
     cards = cards.map(c => c.id === id ? { ...c, active: !c.active } : c);
+    saveCards();
     renderCards();
   }
 
@@ -231,6 +245,7 @@
     document.getElementById('edit-name').value = card.name;
     document.getElementById('edit-url').value = card.url;
     document.getElementById('edit-icon').value = card.icon;
+    document.getElementById('edit-memo').value = card.memo || '';
     document.getElementById('edit-modal').classList.remove('hidden');
   }
   function closeEditModal() {
@@ -241,8 +256,10 @@
     const name = document.getElementById('edit-name').value.trim();
     const url = document.getElementById('edit-url').value.trim();
     const icon = document.getElementById('edit-icon').value.trim();
-    if (!name || !url || !icon) { alert('모든 항목을 입력해 주세요.'); return; }
-    cards = cards.map(c => c.id === editingId ? { ...c, name, url, icon } : c);
+    const memo = document.getElementById('edit-memo').value.trim();
+    if (!name || !url || !icon) { alert('이름, 링크, 아이콘을 입력해 주세요.'); return; }
+    cards = cards.map(c => c.id === editingId ? { ...c, name, url, icon, memo } : c);
+    saveCards();
     closeEditModal();
     renderCards();
   }
@@ -263,6 +280,7 @@
     if (!name || !url) { alert('이름과 링크를 입력해 주세요.'); return; }
     const newId = cards.length > 0 ? Math.max(...cards.map(c => c.id)) + 1 : 1;
     cards.push({ id: newId, name, url, icon, active: true });
+    saveCards();
     closeAddModal();
     renderCards();
   }
@@ -277,6 +295,7 @@
   }
   function confirmDelete() {
     cards = cards.filter(c => c.id !== deletingId);
+    saveCards();
     closeDeleteModal();
     renderCards();
   }
