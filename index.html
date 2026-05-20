@@ -188,17 +188,6 @@
   <p id="footer-phone" class="font-label-md text-on-surface-variant opacity-60 mt-[2px]"></p>
 </div>
 </footer>
-<script>
-  const DEFAULT_FOOTER = { year: '2018', address: '제주시 연삼로 10 4층 JINSYSTEM', phone: '064-722-0442' };
-  function renderFooter() {
-    const saved = localStorage.getItem('jinsystem_footer');
-    const f = saved ? JSON.parse(saved) : DEFAULT_FOOTER;
-    document.getElementById('footer-year').textContent = `© ${f.year} JINSYSTEM. All rights reserved.`;
-    document.getElementById('footer-address').textContent = f.address;
-    document.getElementById('footer-phone').textContent = f.phone;
-  }
-  renderFooter();
-</script>
 <!-- Admin Password Modal -->
 <div id="admin-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm hidden">
   <div class="bg-white rounded-xl shadow-2xl p-lg w-full max-w-sm mx-margin border border-outline-variant">
@@ -223,6 +212,16 @@
   </div>
 </div>
 <script>
+  const DEFAULT_FOOTER = { year: '2018', address: '제주시 연삼로 10 4층 JINSYSTEM', phone: '064-722-0442' };
+  function renderFooter() {
+    const saved = localStorage.getItem('jinsystem_footer');
+    const f = saved ? JSON.parse(saved) : DEFAULT_FOOTER;
+    document.getElementById('footer-year').textContent = `© ${f.year} JINSYSTEM. All rights reserved.`;
+    document.getElementById('footer-address').textContent = f.address;
+    document.getElementById('footer-phone').textContent = f.phone;
+  }
+  renderFooter();
+
   const ADMIN_PASSWORD = 'admin1234';
 
   function openAdminModal(e) {
@@ -248,7 +247,6 @@
     }
   }
 
-  // 모달 바깥 클릭 시 닫기
   document.getElementById('admin-modal').addEventListener('click', function(e) {
     if (e.target === this) closeAdminModal();
   });
