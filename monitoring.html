@@ -159,7 +159,9 @@
 <!-- Footer -->
 <footer class="bg-surface-container py-md border-t border-outline-variant">
 <div class="max-w-[1280px] mx-auto px-margin text-center">
-  <p class="font-label-md text-on-surface-variant opacity-60">© 2024 JINSYSTEM. All rights reserved.</p>
+  <p id="footer-year" class="font-label-md text-on-surface-variant opacity-60"></p>
+  <p id="footer-address" class="font-label-md text-on-surface-variant opacity-60 mt-[4px]"></p>
+  <p id="footer-phone" class="font-label-md text-on-surface-variant opacity-60 mt-[2px]"></p>
 </div>
 </footer>
 <!-- Monitoring Card Render -->
@@ -198,6 +200,17 @@
   }
 
   renderMonitoringCards();
+
+  // Footer 렌더링
+  const DEFAULT_FOOTER = { year: '2018', address: '제주시 연삼로 10 4층 JINSYSTEM', phone: '064-722-0442' };
+  function renderFooter() {
+    const saved = localStorage.getItem('jinsystem_footer');
+    const f = saved ? JSON.parse(saved) : DEFAULT_FOOTER;
+    document.getElementById('footer-year').textContent = `© ${f.year} JINSYSTEM. All rights reserved.`;
+    document.getElementById('footer-address').textContent = f.address;
+    document.getElementById('footer-phone').textContent = f.phone;
+  }
+  renderFooter();
 </script>
 
 <div id="admin-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm hidden">
