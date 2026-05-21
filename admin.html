@@ -131,6 +131,33 @@
         </div>
       </div>
 
+      <!-- 파일 관리 -->
+      <div class="mt-xl">
+        <div class="flex items-center justify-between mb-md">
+          <div>
+            <h2 class="font-headline-md text-headline-md text-primary">파일 관리</h2>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">파일을 업로드하고 관리할 수 있습니다. (최대 100MB)</p>
+          </div>
+          <label class="flex items-center gap-xs bg-primary text-on-primary px-sm py-xs rounded-lg font-body-sm text-body-sm hover:opacity-90 transition-all active:scale-95 shadow-sm cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">upload</span>
+            파일 업로드
+            <input type="file" id="file-input" class="hidden" onchange="uploadFile(event)">
+          </label>
+        </div>
+        <!-- 업로드 진행바 -->
+        <div id="upload-progress-wrap" class="hidden mb-md">
+          <div class="flex items-center justify-between mb-xs">
+            <span id="upload-filename" class="font-body-sm text-body-sm text-on-surface"></span>
+            <span id="upload-percent" class="font-label-md text-label-md text-secondary">0%</span>
+          </div>
+          <div class="w-full bg-surface-container rounded-full h-2">
+            <div id="upload-progress-bar" class="bg-secondary h-2 rounded-full transition-all" style="width:0%"></div>
+          </div>
+        </div>
+        <!-- 파일 목록 -->
+        <div id="file-list" class="flex flex-col gap-xs"></div>
+      </div>
+
       <!-- Footer Management -->
       <div class="mt-xl mb-xl">
         <div class="flex items-center justify-between mb-md">
@@ -324,6 +351,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
   import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+  import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject, listAll } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBUT5XZu-tFBboGb0UZcy7qCTn41ya3d5Y",
@@ -336,6 +364,7 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const storage = getStorage(app);
 
   const DEFAULT_CARDS = [
     { id: 1, name: '제주 버스 GNSS IoT', url: 'http://112.164.247.109/login', icon: 'lan', active: true },
@@ -364,6 +393,89 @@
     await setDoc(doc(db, 'jinsystem', 'memo'), { text });
   }
 
+  // ── 파일 관리 ──
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+
+  async function loadFiles() {
+    const list = document.getElementById('file-list');
+    list.innerHTML = `<div class="text-center py-sm"><span class="font-body-sm text-body-sm text-on-surface-variant opacity-50">파일 목록 불러오는 중...</span></div>`;
+    try {
+      const filesRef = ref(storage, 'files/');
+      const result = await listAll(filesRef);
+      if (result.items.length === 0) {
+        list.innerHTML = `<div class="bg-white border border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center text-center min-h-[100px] gap-sm">
+          <span class="material-symbols-outlined text-[40px] text-on-surface-variant opacity-30">folder_open</span>
+          <p class="font-body-sm text-body-sm text-on-surface-variant opacity-50">업로드된 파일이 없습니다.</p></div>`;
+        return;
+      }
+      const items = await Promise.all(result.items.map(async item => {
+        const url = await getDownloadURL(item);
+        return { name: item.name, url, fullPath: item.fullPath };
+      }));
+      list.innerHTML = items.map(file => `
+        <div class="bg-white border border-outline-variant rounded-xl px-lg py-sm flex items-center gap-sm">
+          <span class="material-symbols-outlined text-[22px] text-secondary flex-shrink-0">insert_drive_file</span>
+          <span class="font-body-sm text-body-sm text-on-surface flex-1 truncate">${file.name}</span>
+          <a href="${file.url}" target="_blank" class="flex items-center gap-xs border border-outline-variant text-on-surface-variant px-xs py-[4px] rounded-lg font-label-md text-[12px] hover:bg-surface-container transition-all flex-shrink-0">
+            <span class="material-symbols-outlined text-[16px]">download</span>다운로드
+          </a>
+          <button onclick="deleteFile('${file.fullPath}', '${file.name}')" class="flex items-center gap-xs border border-red-200 text-red-400 px-xs py-[4px] rounded-lg font-label-md text-[12px] hover:bg-red-50 hover:text-red-600 transition-all flex-shrink-0">
+            <span class="material-symbols-outlined text-[16px]">delete</span>삭제
+          </button>
+        </div>`).join('');
+    } catch(e) {
+      list.innerHTML = `<div class="text-center py-sm"><span class="font-body-sm text-body-sm text-red-400">파일 목록을 불러올 수 없습니다.</span></div>`;
+    }
+  }
+
+  window.uploadFile = async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE) {
+      alert('파일 크기가 100MB를 초과합니다.');
+      e.target.value = '';
+      return;
+    }
+    const progressWrap = document.getElementById('upload-progress-wrap');
+    const progressBar = document.getElementById('upload-progress-bar');
+    const progressPercent = document.getElementById('upload-percent');
+    const progressFilename = document.getElementById('upload-filename');
+
+    progressWrap.classList.remove('hidden');
+    progressFilename.textContent = file.name;
+
+    const fileRef = ref(storage, `files/${file.name}`);
+    const uploadTask = uploadBytesResumable(fileRef, file);
+
+    uploadTask.on('state_changed',
+      snapshot => {
+        const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        progressBar.style.width = pct + '%';
+        progressPercent.textContent = pct + '%';
+      },
+      error => {
+        alert('업로드 실패: ' + error.message);
+        progressWrap.classList.add('hidden');
+        e.target.value = '';
+      },
+      async () => {
+        progressWrap.classList.add('hidden');
+        e.target.value = '';
+        await loadFiles();
+      }
+    );
+  };
+
+  window.deleteFile = async function(fullPath, name) {
+    if (!confirm(`"${name}" 파일을 삭제하시겠습니까?`)) return;
+    try {
+      await deleteObject(ref(storage, fullPath));
+      await loadFiles();
+    } catch(e) {
+      alert('삭제 실패: ' + e.message);
+    }
+  };
+
   async function loadAll() {
     // 카드
     const cardsDoc = await getDoc(doc(db, 'jinsystem', 'cards'));
@@ -386,6 +498,7 @@
     renderFooter();
     renderTodoFilterTabs();
     renderTodos();
+    loadFiles();
   }
 
   // ── 카드 렌더링 ──
