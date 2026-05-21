@@ -272,6 +272,7 @@
         <div class="flex-shrink-0 w-5 h-5 rounded-full border-2 ${todo.done ? 'bg-secondary border-secondary' : 'border-outline-variant'} flex items-center justify-center">
           ${todo.done ? '<span class="material-symbols-outlined text-white text-[14px]">check</span>' : ''}
         </div>
+        <span class="font-label-md text-[11px] font-bold flex-shrink-0 ${todo.done ? 'text-secondary' : 'text-yellow-500'}">${todo.done ? '완료' : '진행중'}</span>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-xs flex-wrap">
             <span class="font-body-sm text-body-sm ${todo.done ? 'line-through text-on-surface-variant' : 'text-on-surface'}">${todo.title}</span>
