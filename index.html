@@ -211,16 +211,31 @@
     </button>
   </div>
 </div>
-<script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBUT5XZu-tFBboGb0UZcy7qCTn41ya3d5Y",
+    authDomain: "jinsystem-1e600.firebaseapp.com",
+    projectId: "jinsystem-1e600",
+    storageBucket: "jinsystem-1e600.firebasestorage.app",
+    messagingSenderId: "201847307149",
+    appId: "1:201847307149:web:2965881e4742da94e85bc4"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
   const DEFAULT_FOOTER = { year: '2018', address: '제주시 연삼로 10 4층 JINSYSTEM', phone: '064-722-0442' };
-  function renderFooter() {
-    const saved = localStorage.getItem('jinsystem_footer');
-    const f = saved ? JSON.parse(saved) : DEFAULT_FOOTER;
+  async function renderFooter() {
+    const d = await getDoc(doc(db, 'jinsystem', 'footer'));
+    const f = d.exists() ? d.data() : DEFAULT_FOOTER;
     document.getElementById('footer-year').textContent = `© ${f.year} JINSYSTEM. All rights reserved.`;
     document.getElementById('footer-address').textContent = f.address;
     document.getElementById('footer-phone').textContent = f.phone;
   }
   renderFooter();
+</script>
 
   const ADMIN_PASSWORD = 'admin1234';
 

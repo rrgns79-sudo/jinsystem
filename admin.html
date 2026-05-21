@@ -321,25 +321,74 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBUT5XZu-tFBboGb0UZcy7qCTn41ya3d5Y",
+    authDomain: "jinsystem-1e600.firebaseapp.com",
+    projectId: "jinsystem-1e600",
+    storageBucket: "jinsystem-1e600.firebasestorage.app",
+    messagingSenderId: "201847307149",
+    appId: "1:201847307149:web:2965881e4742da94e85bc4"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
   const DEFAULT_CARDS = [
     { id: 1, name: '제주 버스 GNSS IoT', url: 'http://112.164.247.109/login', icon: 'lan', active: true },
     { id: 2, name: '스마트그린 청소차량', url: 'https://www.jeju.go.kr/is/jsgm/login.do', icon: 'location_city', active: true },
     { id: 3, name: '제주 제설 관제', url: 'http://jejusnow.vireyi.kr:8071', icon: 'ac_unit', active: true },
     { id: 4, name: 'Ultra RTK', url: 'https://jin.ultrartk.com/ultraRtk/login', icon: 'satellite_alt', active: true },
   ];
-  function loadCards() {
-    const saved = localStorage.getItem('jinsystem_cards');
-    return saved ? JSON.parse(saved) : DEFAULT_CARDS;
-  }
-  function saveCards() {
-    localStorage.setItem('jinsystem_cards', JSON.stringify(cards));
-  }
-  let cards = loadCards();
+  const DEFAULT_FOOTER = { year: '2018', address: '제주시 연삼로 10 4층 JINSYSTEM', phone: '064-722-0442' };
 
+  let cards = [];
+  let todos = [];
   let editingId = null;
   let deletingId = null;
 
+  // ── Firebase 저장/불러오기 ──
+  async function saveCards() {
+    await setDoc(doc(db, 'jinsystem', 'cards'), { data: cards });
+  }
+  async function saveTodos() {
+    await setDoc(doc(db, 'jinsystem', 'todos'), { data: todos });
+  }
+  async function saveFooterData(f) {
+    await setDoc(doc(db, 'jinsystem', 'footer'), f);
+  }
+  async function saveMemoData(text) {
+    await setDoc(doc(db, 'jinsystem', 'memo'), { text });
+  }
+
+  async function loadAll() {
+    // 카드
+    const cardsDoc = await getDoc(doc(db, 'jinsystem', 'cards'));
+    cards = cardsDoc.exists() ? cardsDoc.data().data : DEFAULT_CARDS;
+    // 투두
+    const todosDoc = await getDoc(doc(db, 'jinsystem', 'todos'));
+    todos = todosDoc.exists() ? todosDoc.data().data : [];
+    // 푸터
+    const footerDoc = await getDoc(doc(db, 'jinsystem', 'footer'));
+    const footer = footerDoc.exists() ? footerDoc.data() : DEFAULT_FOOTER;
+    renderFooterData(footer);
+    // 메모
+    const memoDoc = await getDoc(doc(db, 'jinsystem', 'memo'));
+    if (memoDoc.exists()) {
+      document.getElementById('memo-textarea').value = memoDoc.data().text || '';
+      document.getElementById('memo-status').textContent = '저장됨';
+    }
+
+    renderCards();
+    renderFooter();
+    renderTodoFilterTabs();
+    renderTodos();
+  }
+
+  // ── 카드 렌더링 ──
   function renderCards() {
     const grid = document.getElementById('cards-grid');
     if (cards.length === 0) {
@@ -377,12 +426,10 @@
         ${card.memo ? `<p class="font-body-sm text-[12px] text-on-surface-variant bg-surface-container rounded-lg px-xs py-[6px] leading-relaxed">${card.memo}</p>` : ''}
         <div class="flex gap-xs mt-auto pt-sm border-t border-outline-variant">
           <button onclick="openEditModal(${card.id})" class="flex-1 flex items-center justify-center gap-xs border border-outline-variant text-on-surface-variant py-xs rounded-lg font-body-sm text-[13px] hover:bg-surface-container hover:text-secondary transition-all">
-            <span class="material-symbols-outlined text-[16px]">edit</span>
-            수정
+            <span class="material-symbols-outlined text-[16px]">edit</span>수정
           </button>
           <button onclick="openDeleteModal(${card.id})" class="flex-1 flex items-center justify-center gap-xs border border-red-200 text-red-400 py-xs rounded-lg font-body-sm text-[13px] hover:bg-red-50 hover:text-red-600 transition-all">
-            <span class="material-symbols-outlined text-[16px]">delete</span>
-            삭제
+            <span class="material-symbols-outlined text-[16px]">delete</span>삭제
           </button>
         </div>
       </div>
@@ -391,15 +438,9 @@
 
   // 카드 드래그 앤 드롭
   let dragCardId = null;
-  function onCardDragStart(e) {
-    dragCardId = parseInt(e.currentTarget.dataset.cardId);
-    e.currentTarget.classList.add('opacity-30');
-  }
-  function onCardDragOver(e) {
-    e.preventDefault();
-    e.currentTarget.classList.add('ring-2', 'ring-secondary');
-  }
-  function onCardDrop(e) {
+  window.onCardDragStart = function(e) { dragCardId = parseInt(e.currentTarget.dataset.cardId); e.currentTarget.classList.add('opacity-30'); };
+  window.onCardDragOver = function(e) { e.preventDefault(); e.currentTarget.classList.add('ring-2', 'ring-secondary'); };
+  window.onCardDrop = async function(e) {
     e.preventDefault();
     const targetId = parseInt(e.currentTarget.dataset.cardId);
     if (dragCardId === targetId) return;
@@ -409,23 +450,24 @@
     const [moved] = reordered.splice(fromIdx, 1);
     reordered.splice(toIdx, 0, moved);
     cards = reordered;
-    saveCards();
+    await saveCards();
     renderCards();
     renderTodoFilterTabs();
-  }
-  function onCardDragEnd(e) {
+  };
+  window.onCardDragEnd = function(e) {
     e.currentTarget.classList.remove('opacity-30');
     document.querySelectorAll('[data-card-id]').forEach(el => el.classList.remove('ring-2', 'ring-secondary'));
-  }
+  };
 
-  function toggleActive(id) {
+  window.toggleActive = async function(id) {
     cards = cards.map(c => c.id === id ? { ...c, active: !c.active } : c);
-    saveCards();
+    await saveCards();
     renderCards();
     renderTodoFilterTabs();
-  }
+  };
 
-  function openEditModal(id) {
+  // 카드 수정
+  window.openEditModal = function(id) {
     editingId = id;
     const card = cards.find(c => c.id === id);
     document.getElementById('edit-name').value = card.name;
@@ -433,83 +475,55 @@
     document.getElementById('edit-icon').value = card.icon;
     document.getElementById('edit-memo').value = card.memo || '';
     document.getElementById('edit-modal').classList.remove('hidden');
-  }
-  function closeEditModal() {
-    document.getElementById('edit-modal').classList.add('hidden');
-    editingId = null;
-  }
-  function saveEdit() {
+  };
+  window.closeEditModal = function() { document.getElementById('edit-modal').classList.add('hidden'); editingId = null; };
+  window.saveEdit = async function() {
     const name = document.getElementById('edit-name').value.trim();
     const url = document.getElementById('edit-url').value.trim();
     const icon = document.getElementById('edit-icon').value.trim();
     const memo = document.getElementById('edit-memo').value.trim();
     if (!name || !url || !icon) { alert('이름, 링크, 아이콘을 입력해 주세요.'); return; }
     cards = cards.map(c => c.id === editingId ? { ...c, name, url, icon, memo } : c);
-    saveCards();
-    closeEditModal();
+    await saveCards();
+    window.closeEditModal();
     renderCards();
     renderTodoFilterTabs();
-  }
+  };
 
-  function openAddModal() {
+  // 카드 추가
+  window.openAddModal = function() {
     document.getElementById('add-name').value = '';
     document.getElementById('add-url').value = '';
     document.getElementById('add-icon').value = '';
     document.getElementById('add-modal').classList.remove('hidden');
-  }
-  function closeAddModal() {
-    document.getElementById('add-modal').classList.add('hidden');
-  }
-  function saveAdd() {
+  };
+  window.closeAddModal = function() { document.getElementById('add-modal').classList.add('hidden'); };
+  window.saveAdd = async function() {
     const name = document.getElementById('add-name').value.trim();
     const url = document.getElementById('add-url').value.trim();
     const icon = document.getElementById('add-icon').value.trim() || 'link';
     if (!name || !url) { alert('이름과 링크를 입력해 주세요.'); return; }
     const newId = cards.length > 0 ? Math.max(...cards.map(c => c.id)) + 1 : 1;
     cards.push({ id: newId, name, url, icon, active: true });
-    saveCards();
-    closeAddModal();
+    await saveCards();
+    window.closeAddModal();
     renderCards();
     renderTodoFilterTabs();
-  }
+  };
 
-  function openDeleteModal(id) {
-    deletingId = id;
-    document.getElementById('delete-modal').classList.remove('hidden');
-  }
-  function closeDeleteModal() {
-    document.getElementById('delete-modal').classList.add('hidden');
-    deletingId = null;
-  }
-  function confirmDelete() {
+  // 카드 삭제
+  window.openDeleteModal = function(id) { deletingId = id; document.getElementById('delete-modal').classList.remove('hidden'); };
+  window.closeDeleteModal = function() { document.getElementById('delete-modal').classList.add('hidden'); deletingId = null; };
+  window.confirmDelete = async function() {
     cards = cards.filter(c => c.id !== deletingId);
-    saveCards();
-    closeDeleteModal();
+    await saveCards();
+    window.closeDeleteModal();
     renderCards();
     renderTodoFilterTabs();
-  }
+  };
 
-  ['edit-modal', 'add-modal', 'delete-modal', 'footer-modal'].forEach(id => {
-    document.getElementById(id).addEventListener('click', function(e) {
-      if (e.target === this) {
-        this.classList.add('hidden');
-        editingId = null; deletingId = null;
-      }
-    });
-  });
-
-  // Footer 관리
-  const DEFAULT_FOOTER = { year: '2018', address: '제주시 연삼로 10 4층 JINSYSTEM', phone: '064-722-0442' };
-
-  function loadFooter() {
-    const saved = localStorage.getItem('jinsystem_footer');
-    return saved ? JSON.parse(saved) : DEFAULT_FOOTER;
-  }
-  function saveFooterData(data) {
-    localStorage.setItem('jinsystem_footer', JSON.stringify(data));
-  }
-  function renderFooter() {
-    const f = loadFooter();
+  // ── 푸터 ──
+  function renderFooterData(f) {
     document.getElementById('footer-year').textContent = `© ${f.year} JINSYSTEM. All rights reserved.`;
     document.getElementById('footer-address').textContent = f.address;
     document.getElementById('footer-phone').textContent = f.phone;
@@ -517,72 +531,51 @@
     document.getElementById('footer-preview-address').textContent = f.address;
     document.getElementById('footer-preview-phone').textContent = f.phone;
   }
-  function openFooterModal() {
-    const f = loadFooter();
+  function renderFooter() {
+    getDoc(doc(db, 'jinsystem', 'footer')).then(d => {
+      renderFooterData(d.exists() ? d.data() : DEFAULT_FOOTER);
+    });
+  }
+  window.openFooterModal = async function() {
+    const d = await getDoc(doc(db, 'jinsystem', 'footer'));
+    const f = d.exists() ? d.data() : DEFAULT_FOOTER;
     document.getElementById('footer-input-year').value = f.year;
     document.getElementById('footer-input-address').value = f.address;
     document.getElementById('footer-input-phone').value = f.phone;
     document.getElementById('footer-modal').classList.remove('hidden');
-  }
-  function closeFooterModal() {
-    document.getElementById('footer-modal').classList.add('hidden');
-  }
-  function saveFooter() {
+  };
+  window.closeFooterModal = function() { document.getElementById('footer-modal').classList.add('hidden'); };
+  window.saveFooter = async function() {
     const year = document.getElementById('footer-input-year').value.trim();
     const address = document.getElementById('footer-input-address').value.trim();
     const phone = document.getElementById('footer-input-phone').value.trim();
     if (!year || !address || !phone) { alert('모든 항목을 입력해 주세요.'); return; }
-    saveFooterData({ year, address, phone });
-    closeFooterModal();
+    await saveFooterData({ year, address, phone });
+    window.closeFooterModal();
     renderFooter();
-  }
+  };
 
-  function logout() {
-    sessionStorage.removeItem('jinsystem_admin');
-    window.location.href = 'index.html';
-  }
-
-  // 메모장
+  // ── 메모장 ──
   let memoChanged = false;
-  function loadMemo() {
-    const saved = localStorage.getItem('jinsystem_memo');
-    if (saved) {
-      document.getElementById('memo-textarea').value = saved;
-      document.getElementById('memo-status').textContent = '저장됨';
-    }
-  }
-  function onMemoInput() {
-    memoChanged = true;
-    document.getElementById('memo-status').textContent = '저장되지 않은 변경사항';
-  }
-  function saveMemo() {
+  window.onMemoInput = function() { memoChanged = true; document.getElementById('memo-status').textContent = '저장되지 않은 변경사항'; };
+  window.saveMemo = async function() {
     const text = document.getElementById('memo-textarea').value;
-    localStorage.setItem('jinsystem_memo', text);
+    await saveMemoData(text);
     memoChanged = false;
     document.getElementById('memo-status').textContent = '저장됨';
-  }
-  function clearMemo() {
+  };
+  window.clearMemo = async function() {
     if (!confirm('메모를 초기화하시겠습니까?')) return;
     document.getElementById('memo-textarea').value = '';
-    localStorage.removeItem('jinsystem_memo');
+    await saveMemoData('');
     memoChanged = false;
     document.getElementById('memo-status').textContent = '';
-  }
-
-  // Ctrl+S 저장 단축키
+  };
   document.addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault();
-      saveMemo();
-    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); window.saveMemo(); }
   });
 
-  renderCards();
-  renderFooter();
-  loadMemo();
-
-  // ── To-Do 게시판 ──
-  let todos = JSON.parse(localStorage.getItem('jinsystem_todos') || '[]');
+  // ── To-Do List ──
   let todoEditingId = null;
   let currentFilter = '전체';
 
@@ -592,79 +585,53 @@
     '낮음': { dot: 'bg-green-500', text: 'text-green-600', bg: 'bg-green-50 border-green-200' },
   };
 
-  function getCardCategories() {
-    return [...cards.map(c => c.name), '기타'];
-  }
+  function getCardCategories() { return [...cards.map(c => c.name), '기타']; }
 
   function renderTodoFilterTabs() {
     const categories = ['전체', ...getCardCategories()];
     const container = document.getElementById('todo-filter-tabs');
     container.innerHTML = categories.map(cat => `
-      <button onclick="setTodoFilter('${cat}')" class="todo-filter-btn px-sm py-[6px] rounded-full font-label-md text-[12px] border transition-all ${cat === currentFilter ? 'bg-primary text-white border-primary' : 'text-on-surface-variant border-outline-variant'}">${cat}</button>
+      <button onclick="setTodoFilter('${cat}')" class="px-sm py-[6px] rounded-full font-label-md text-[12px] border transition-all ${cat === currentFilter ? 'bg-primary text-white border-primary' : 'text-on-surface-variant border-outline-variant'}">${cat}</button>
     `).join('');
   }
 
   function renderTodoCategorySelect(selectedValue) {
-    const categories = getCardCategories();
     const select = document.getElementById('todo-input-category');
-    select.innerHTML = categories.map(cat =>
+    select.innerHTML = getCardCategories().map(cat =>
       `<option value="${cat}" ${cat === selectedValue ? 'selected' : ''}>${cat}</option>`
     ).join('');
   }
 
-  function saveTodos() {
-    localStorage.setItem('jinsystem_todos', JSON.stringify(todos));
-  }
-
-  function setTodoFilter(filter) {
-    currentFilter = filter;
-    renderTodoFilterTabs();
-    renderTodos();
-  }
+  window.setTodoFilter = function(filter) { currentFilter = filter; renderTodoFilterTabs(); renderTodos(); };
 
   function renderTodos() {
     const list = document.getElementById('todo-list');
     const filtered = currentFilter === '전체' ? todos : todos.filter(t => t.category === currentFilter);
-
     if (filtered.length === 0) {
-      list.innerHTML = `
-        <div class="bg-white border border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center text-center min-h-[120px] gap-sm">
-          <span class="material-symbols-outlined text-[40px] text-on-surface-variant opacity-30">check_circle</span>
-          <p class="font-body-sm text-body-sm text-on-surface-variant opacity-50">할 일이 없습니다.</p>
-        </div>`;
+      list.innerHTML = `<div class="bg-white border border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center text-center min-h-[120px] gap-sm">
+        <span class="material-symbols-outlined text-[40px] text-on-surface-variant opacity-30">check_circle</span>
+        <p class="font-body-sm text-body-sm text-on-surface-variant opacity-50">할 일이 없습니다.</p></div>`;
       return;
     }
-
     list.innerHTML = filtered.map(todo => {
       const p = PRIORITY_CONFIG[todo.priority] || PRIORITY_CONFIG['낮음'];
-      const today = new Date();
-      today.setHours(0,0,0,0);
+      const today = new Date(); today.setHours(0,0,0,0);
       const todayStr = today.toISOString().split('T')[0];
       const isOverdue = todo.deadline && !todo.done && todo.deadline < todayStr;
-
-      let ddayText = '';
-      let ddayStyle = '';
+      let ddayText = '', ddayStyle = '';
       if (todo.deadline) {
-        const deadline = new Date(todo.deadline);
-        deadline.setHours(0,0,0,0);
+        const deadline = new Date(todo.deadline); deadline.setHours(0,0,0,0);
         const diff = Math.round((deadline - today) / (1000 * 60 * 60 * 24));
         if (diff === 0) { ddayText = 'D-Day'; ddayStyle = 'bg-red-500 text-white'; }
         else if (diff > 0) { ddayText = `D-${diff}`; ddayStyle = diff <= 3 ? 'bg-orange-100 text-orange-600' : 'bg-blue-50 text-secondary'; }
         else { ddayText = `D+${Math.abs(diff)}`; ddayStyle = 'bg-red-50 text-red-500'; }
       }
-
       const deadlineText = todo.deadline
-        ? `<span class="font-label-md text-[11px] ${isOverdue && !todo.done ? 'text-red-500 font-bold' : 'text-on-surface-variant opacity-60'}">${isOverdue && !todo.done ? '⚠ 기한 초과 · ' : ''}${todo.deadline}</span>`
-        : '';
-
+        ? `<span class="font-label-md text-[11px] ${isOverdue && !todo.done ? 'text-red-500 font-bold' : 'text-on-surface-variant opacity-60'}">${isOverdue && !todo.done ? '⚠ 기한 초과 · ' : ''}${todo.deadline}</span>` : '';
       return `
       <div class="bg-white border border-outline-variant rounded-xl px-lg py-sm flex items-center gap-sm transition-all ${todo.done ? 'opacity-50' : ''} cursor-grab active:cursor-grabbing"
-        draggable="true"
-        data-todo-id="${todo.id}"
-        ondragstart="onTodoDragStart(event)"
-        ondragover="onTodoDragOver(event)"
-        ondrop="onTodoDrop(event)"
-        ondragend="onTodoDragEnd(event)">
+        draggable="true" data-todo-id="${todo.id}"
+        ondragstart="onTodoDragStart(event)" ondragover="onTodoDragOver(event)" ondrop="onTodoDrop(event)" ondragend="onTodoDragEnd(event)">
         <span class="material-symbols-outlined text-[18px] text-on-surface-variant opacity-40 flex-shrink-0">drag_indicator</span>
         <button onclick="toggleTodoDone(${todo.id})" class="flex-shrink-0 w-5 h-5 rounded-full border-2 ${todo.done ? 'bg-secondary border-secondary' : 'border-outline-variant'} flex items-center justify-center transition-all">
           ${todo.done ? '<span class="material-symbols-outlined text-white text-[14px]">check</span>' : ''}
@@ -673,24 +640,14 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-xs flex-wrap">
             <span class="font-body-sm text-body-sm ${todo.done ? 'line-through text-on-surface-variant' : 'text-on-surface'}">${todo.title}</span>
-            <span class="inline-flex items-center gap-[3px] px-xs py-[1px] rounded-full border ${p.bg}">
-              <span class="w-[6px] h-[6px] rounded-full ${p.dot}"></span>
-              <span class="font-label-md text-[10px] ${p.text}">${todo.priority}</span>
-            </span>
+            <span class="inline-flex items-center gap-[3px] px-xs py-[1px] rounded-full border ${p.bg}"><span class="w-[6px] h-[6px] rounded-full ${p.dot}"></span><span class="font-label-md text-[10px] ${p.text}">${todo.priority}</span></span>
             <span class="font-label-md text-[10px] bg-surface-container text-on-surface-variant px-xs py-[1px] rounded-full">${todo.category}</span>
           </div>
-          ${deadlineText ? `<div class="mt-[2px] flex items-center gap-xs">
-            ${deadlineText}
-            ${ddayText && !todo.done ? `<span class="font-label-md text-[10px] font-bold px-xs py-[1px] rounded-full ${ddayStyle}">${ddayText}</span>` : ''}
-          </div>` : ''}
+          ${deadlineText ? `<div class="mt-[2px] flex items-center gap-xs">${deadlineText}${ddayText && !todo.done ? `<span class="font-label-md text-[10px] font-bold px-xs py-[1px] rounded-full ${ddayStyle}">${ddayText}</span>` : ''}</div>` : ''}
         </div>
         <div class="flex items-center gap-xs flex-shrink-0">
-          <button onclick="openTodoEditModal(${todo.id})" class="text-on-surface-variant hover:text-secondary transition-colors">
-            <span class="material-symbols-outlined text-[18px]">edit</span>
-          </button>
-          <button onclick="deleteTodo(${todo.id})" class="text-on-surface-variant hover:text-red-500 transition-colors">
-            <span class="material-symbols-outlined text-[18px]">delete</span>
-          </button>
+          <button onclick="openTodoEditModal(${todo.id})" class="text-on-surface-variant hover:text-secondary transition-colors"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+          <button onclick="deleteTodo(${todo.id})" class="text-on-surface-variant hover:text-red-500 transition-colors"><span class="material-symbols-outlined text-[18px]">delete</span></button>
         </div>
       </div>`;
     }).join('');
@@ -698,33 +655,25 @@
 
   // To-Do 드래그 앤 드롭
   let dragTodoId = null;
-  function onTodoDragStart(e) {
-    dragTodoId = parseInt(e.currentTarget.dataset.todoId);
-    e.currentTarget.classList.add('opacity-30');
-  }
-  function onTodoDragOver(e) {
-    e.preventDefault();
-    e.currentTarget.classList.add('ring-2', 'ring-secondary');
-  }
-  function onTodoDrop(e) {
+  window.onTodoDragStart = function(e) { dragTodoId = parseInt(e.currentTarget.dataset.todoId); e.currentTarget.classList.add('opacity-30'); };
+  window.onTodoDragOver = function(e) { e.preventDefault(); e.currentTarget.classList.add('ring-2', 'ring-secondary'); };
+  window.onTodoDrop = async function(e) {
     e.preventDefault();
     const targetId = parseInt(e.currentTarget.dataset.todoId);
     if (dragTodoId === targetId) return;
     const fromIdx = todos.findIndex(t => t.id === dragTodoId);
     const toIdx = todos.findIndex(t => t.id === targetId);
-    const reordered = [...todos];
-    const [moved] = reordered.splice(fromIdx, 1);
-    reordered.splice(toIdx, 0, moved);
+    const reordered = [...todos]; const [moved] = reordered.splice(fromIdx, 1); reordered.splice(toIdx, 0, moved);
     todos = reordered;
-    saveTodos();
+    await saveTodos();
     renderTodos();
-  }
-  function onTodoDragEnd(e) {
+  };
+  window.onTodoDragEnd = function(e) {
     e.currentTarget.classList.remove('opacity-30');
     document.querySelectorAll('[data-todo-id]').forEach(el => el.classList.remove('ring-2', 'ring-secondary'));
-  }
+  };
 
-  function openTodoModal() {
+  window.openTodoModal = function() {
     todoEditingId = null;
     document.getElementById('todo-modal-title').textContent = '할 일 추가';
     document.getElementById('todo-input-title').value = '';
@@ -733,9 +682,8 @@
     document.getElementById('todo-input-deadline').value = '';
     document.getElementById('todo-modal').classList.remove('hidden');
     setTimeout(() => document.getElementById('todo-input-title').focus(), 100);
-  }
-
-  function openTodoEditModal(id) {
+  };
+  window.openTodoEditModal = function(id) {
     todoEditingId = id;
     const todo = todos.find(t => t.id === id);
     document.getElementById('todo-modal-title').textContent = '할 일 수정';
@@ -744,50 +692,46 @@
     document.getElementById('todo-input-priority').value = todo.priority;
     document.getElementById('todo-input-deadline').value = todo.deadline || '';
     document.getElementById('todo-modal').classList.remove('hidden');
-  }
-
-  function closeTodoModal() {
-    document.getElementById('todo-modal').classList.add('hidden');
-    todoEditingId = null;
-  }
-
-  function saveTodo() {
+  };
+  window.closeTodoModal = function() { document.getElementById('todo-modal').classList.add('hidden'); todoEditingId = null; };
+  window.saveTodo = async function() {
     const title = document.getElementById('todo-input-title').value.trim();
     const category = document.getElementById('todo-input-category').value;
     const priority = document.getElementById('todo-input-priority').value;
     const deadline = document.getElementById('todo-input-deadline').value;
     if (!title) { alert('할 일을 입력해 주세요.'); return; }
-
     if (todoEditingId !== null) {
       todos = todos.map(t => t.id === todoEditingId ? { ...t, title, category, priority, deadline } : t);
     } else {
       const newId = todos.length > 0 ? Math.max(...todos.map(t => t.id)) + 1 : 1;
       todos.push({ id: newId, title, category, priority, deadline, done: false });
     }
-    saveTodos();
-    closeTodoModal();
+    await saveTodos();
+    window.closeTodoModal();
     renderTodos();
-  }
-
-  function toggleTodoDone(id) {
+  };
+  window.toggleTodoDone = async function(id) {
     todos = todos.map(t => t.id === id ? { ...t, done: !t.done } : t);
-    saveTodos();
+    await saveTodos();
     renderTodos();
-  }
-
-  function deleteTodo(id) {
+  };
+  window.deleteTodo = async function(id) {
     if (!confirm('이 항목을 삭제하시겠습니까?')) return;
     todos = todos.filter(t => t.id !== id);
-    saveTodos();
+    await saveTodos();
     renderTodos();
-  }
+  };
 
-  document.getElementById('todo-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeTodoModal();
+  // 모달 바깥 클릭 닫기
+  ['edit-modal','add-modal','delete-modal','footer-modal','todo-modal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) {
+      if (e.target === this) { this.classList.add('hidden'); editingId = null; deletingId = null; todoEditingId = null; }
+    });
   });
 
-  // 필터 탭 + To-Do 초기 렌더링
-  renderTodoFilterTabs();
-  renderTodos();
+  window.logout = function() { sessionStorage.removeItem('jinsystem_admin'); window.location.href = 'index.html'; };
+
+  // 초기 로드
+  loadAll();
 </script>
 </body></html>

@@ -180,19 +180,60 @@
 </div>
 </footer>
 <!-- Monitoring Card Render -->
-<script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBUT5XZu-tFBboGb0UZcy7qCTn41ya3d5Y",
+    authDomain: "jinsystem-1e600.firebaseapp.com",
+    projectId: "jinsystem-1e600",
+    storageBucket: "jinsystem-1e600.firebasestorage.app",
+    messagingSenderId: "201847307149",
+    appId: "1:201847307149:web:2965881e4742da94e85bc4"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
   const DEFAULT_CARDS = [
     { id: 1, name: '제주 버스 GNSS IoT', url: 'http://112.164.247.109/login', icon: 'lan', active: true },
     { id: 2, name: '스마트그린 청소차량', url: 'https://www.jeju.go.kr/is/jsgm/login.do', icon: 'location_city', active: true },
     { id: 3, name: '제주 제설 관제', url: 'http://jejusnow.vireyi.kr:8071', icon: 'ac_unit', active: true },
     { id: 4, name: 'Ultra RTK', url: 'https://jin.ultrartk.com/ultraRtk/login', icon: 'satellite_alt', active: true },
   ];
+  const DEFAULT_FOOTER = { year: '2018', address: '제주시 연삼로 10 4층 JINSYSTEM', phone: '064-722-0442' };
 
-  function renderMonitoringCards() {
-    const saved = localStorage.getItem('jinsystem_cards');
-    const cards = saved ? JSON.parse(saved) : DEFAULT_CARDS;
+  let currentFilter = '전체';
+
+  const PRIORITY_CONFIG = {
+    '높음': { dot: 'bg-red-500', text: 'text-red-600', bg: 'bg-red-50 border-red-200' },
+    '중간': { dot: 'bg-yellow-400', text: 'text-yellow-600', bg: 'bg-yellow-50 border-yellow-200' },
+    '낮음': { dot: 'bg-green-500', text: 'text-green-600', bg: 'bg-green-50 border-green-200' },
+  };
+
+  async function loadAll() {
+    // 카드
+    const cardsDoc = await getDoc(doc(db, 'jinsystem', 'cards'));
+    const cards = cardsDoc.exists() ? cardsDoc.data().data : DEFAULT_CARDS;
+    renderMonitoringCards(cards);
+    renderTodoFilterTabs(cards);
+
+    // 투두
+    const todosDoc = await getDoc(doc(db, 'jinsystem', 'todos'));
+    const todos = todosDoc.exists() ? todosDoc.data().data : [];
+    renderTodos(todos);
+
+    // 푸터
+    const footerDoc = await getDoc(doc(db, 'jinsystem', 'footer'));
+    const f = footerDoc.exists() ? footerDoc.data() : DEFAULT_FOOTER;
+    document.getElementById('footer-year').textContent = `© ${f.year} JINSYSTEM. All rights reserved.`;
+    document.getElementById('footer-address').textContent = f.address;
+    document.getElementById('footer-phone').textContent = f.phone;
+  }
+
+  function renderMonitoringCards(cards) {
     const grid = document.getElementById('monitoring-grid');
-
     grid.innerHTML = cards.map(card => `
       <a class="glass-card rounded-xl p-lg shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group flex flex-col h-full ${!card.active ? 'opacity-40 pointer-events-none' : ''}"
          href="${card.url}" target="_blank">
@@ -214,73 +255,49 @@
     `).join('');
   }
 
-  renderMonitoringCards();
-
-  // To-Do 게시판
-  const PRIORITY_CONFIG = {
-    '높음': { dot: 'bg-red-500', text: 'text-red-600', bg: 'bg-red-50 border-red-200' },
-    '중간': { dot: 'bg-yellow-400', text: 'text-yellow-600', bg: 'bg-yellow-50 border-yellow-200' },
-    '낮음': { dot: 'bg-green-500', text: 'text-green-600', bg: 'bg-green-50 border-green-200' },
-  };
-
-  let currentFilter = '전체';
-
-  function getCards() {
-    const saved = localStorage.getItem('jinsystem_cards');
-    return saved ? JSON.parse(saved) : [];
-  }
-
-  function renderTodoFilterTabs() {
-    const cardNames = getCards().map(c => c.name);
-    const categories = ['전체', ...cardNames, '기타'];
+  function renderTodoFilterTabs(cards) {
+    const categories = ['전체', ...cards.map(c => c.name), '기타'];
     const container = document.getElementById('todo-filter-tabs');
     container.innerHTML = categories.map(cat => `
-      <button onclick="setTodoFilter('${cat}')" class="px-sm py-[6px] rounded-full font-label-md text-[12px] border transition-all ${cat === currentFilter ? 'bg-secondary text-white border-secondary' : 'text-on-surface-variant border-outline-variant bg-white'}">${cat}</button>
+      <button onclick="setTodoFilter('${cat}')" class="filter-btn px-sm py-[6px] rounded-full font-label-md text-[12px] border transition-all ${cat === currentFilter ? 'bg-secondary text-white border-secondary' : 'text-on-surface-variant border-outline-variant bg-white'}">${cat}</button>
     `).join('');
   }
 
-  function setTodoFilter(filter) {
+  window._allTodos = [];
+  window.setTodoFilter = function(filter) {
     currentFilter = filter;
-    renderTodoFilterTabs();
-    renderTodos();
-  }
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      const active = btn.textContent === filter;
+      btn.className = `filter-btn px-sm py-[6px] rounded-full font-label-md text-[12px] border transition-all ${active ? 'bg-secondary text-white border-secondary' : 'text-on-surface-variant border-outline-variant bg-white'}`;
+    });
+    renderTodos(window._allTodos);
+  };
 
-  function renderTodos() {
-    const todos = JSON.parse(localStorage.getItem('jinsystem_todos') || '[]');
+  function renderTodos(todos) {
+    window._allTodos = todos;
     const filtered = currentFilter === '전체' ? todos : todos.filter(t => t.category === currentFilter);
     const list = document.getElementById('todo-list');
-
     if (filtered.length === 0) {
-      list.innerHTML = `
-        <div class="bg-white border border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center text-center min-h-[100px] gap-sm">
-          <span class="material-symbols-outlined text-[36px] text-on-surface-variant opacity-30">check_circle</span>
-          <p class="font-body-sm text-body-sm text-on-surface-variant opacity-50">할 일이 없습니다.</p>
-        </div>`;
+      list.innerHTML = `<div class="bg-white border border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center text-center min-h-[100px] gap-sm">
+        <span class="material-symbols-outlined text-[36px] text-on-surface-variant opacity-30">check_circle</span>
+        <p class="font-body-sm text-body-sm text-on-surface-variant opacity-50">할 일이 없습니다.</p></div>`;
       return;
     }
-
     list.innerHTML = filtered.map(todo => {
       const p = PRIORITY_CONFIG[todo.priority] || PRIORITY_CONFIG['낮음'];
-      const today = new Date();
-      today.setHours(0,0,0,0);
+      const today = new Date(); today.setHours(0,0,0,0);
       const todayStr = today.toISOString().split('T')[0];
       const isOverdue = todo.deadline && !todo.done && todo.deadline < todayStr;
-
-      let ddayText = '';
-      let ddayStyle = '';
+      let ddayText = '', ddayStyle = '';
       if (todo.deadline) {
-        const deadline = new Date(todo.deadline);
-        deadline.setHours(0,0,0,0);
+        const deadline = new Date(todo.deadline); deadline.setHours(0,0,0,0);
         const diff = Math.round((deadline - today) / (1000 * 60 * 60 * 24));
         if (diff === 0) { ddayText = 'D-Day'; ddayStyle = 'bg-red-500 text-white'; }
         else if (diff > 0) { ddayText = `D-${diff}`; ddayStyle = diff <= 3 ? 'bg-orange-100 text-orange-600' : 'bg-blue-50 text-secondary'; }
         else { ddayText = `D+${Math.abs(diff)}`; ddayStyle = 'bg-red-50 text-red-500'; }
       }
-
       const deadlineText = todo.deadline
-        ? `<span class="font-label-md text-[11px] ${isOverdue && !todo.done ? 'text-red-500 font-bold' : 'text-on-surface-variant opacity-60'}">${isOverdue && !todo.done ? '⚠ 기한 초과 · ' : ''}${todo.deadline}</span>`
-        : '';
-
+        ? `<span class="font-label-md text-[11px] ${isOverdue && !todo.done ? 'text-red-500 font-bold' : 'text-on-surface-variant opacity-60'}">${isOverdue && !todo.done ? '⚠ 기한 초과 · ' : ''}${todo.deadline}</span>` : '';
       return `
       <div class="bg-white border border-outline-variant rounded-xl px-lg py-sm flex items-center gap-sm ${todo.done ? 'opacity-50' : ''}">
         <div class="flex-shrink-0 w-5 h-5 rounded-full border-2 ${todo.done ? 'bg-secondary border-secondary' : 'border-outline-variant'} flex items-center justify-center">
@@ -290,36 +307,17 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-xs flex-wrap">
             <span class="font-body-sm text-body-sm ${todo.done ? 'line-through text-on-surface-variant' : 'text-on-surface'}">${todo.title}</span>
-            <span class="inline-flex items-center gap-[3px] px-xs py-[1px] rounded-full border ${p.bg}">
-              <span class="w-[6px] h-[6px] rounded-full ${p.dot}"></span>
-              <span class="font-label-md text-[10px] ${p.text}">${todo.priority}</span>
-            </span>
+            <span class="inline-flex items-center gap-[3px] px-xs py-[1px] rounded-full border ${p.bg}"><span class="w-[6px] h-[6px] rounded-full ${p.dot}"></span><span class="font-label-md text-[10px] ${p.text}">${todo.priority}</span></span>
             <span class="font-label-md text-[10px] bg-surface-container text-on-surface-variant px-xs py-[1px] rounded-full">${todo.category}</span>
           </div>
-          ${deadlineText ? `<div class="mt-[2px] flex items-center gap-xs">
-            ${deadlineText}
-            ${ddayText && !todo.done ? `<span class="font-label-md text-[10px] font-bold px-xs py-[1px] rounded-full ${ddayStyle}">${ddayText}</span>` : ''}
-          </div>` : ''}
+          ${deadlineText ? `<div class="mt-[2px] flex items-center gap-xs">${deadlineText}${ddayText && !todo.done ? `<span class="font-label-md text-[10px] font-bold px-xs py-[1px] rounded-full ${ddayStyle}">${ddayText}</span>` : ''}</div>` : ''}
         </div>
       </div>`;
     }).join('');
   }
 
-  renderTodoFilterTabs();
-  renderTodos();
-
-  // Footer 렌더링
-  const DEFAULT_FOOTER = { year: '2018', address: '제주시 연삼로 10 4층 JINSYSTEM', phone: '064-722-0442' };
-  function renderFooter() {
-    const saved = localStorage.getItem('jinsystem_footer');
-    const f = saved ? JSON.parse(saved) : DEFAULT_FOOTER;
-    document.getElementById('footer-year').textContent = `© ${f.year} JINSYSTEM. All rights reserved.`;
-    document.getElementById('footer-address').textContent = f.address;
-    document.getElementById('footer-phone').textContent = f.phone;
-  }
-  renderFooter();
+  loadAll();
 </script>
-
 <div id="admin-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm hidden">
   <div class="bg-white rounded-xl shadow-2xl p-lg w-full max-w-sm mx-margin border border-outline-variant">
     <div class="flex items-center justify-between mb-md">
