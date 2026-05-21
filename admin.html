@@ -94,41 +94,8 @@
             할 일 추가
           </button>
         </div>
-
-        <!-- 카테고리 필터 -->
         <div class="flex flex-wrap gap-xs mb-md" id="todo-filter-tabs"></div>
-
-        <!-- To-Do 리스트 -->
         <div id="todo-list" class="flex flex-col gap-xs"></div>
-      </div>
-
-      <!-- 메모장 -->
-      <div class="mt-xl">
-        <div class="flex items-center justify-between mb-md">
-          <div>
-            <h2 class="font-headline-md text-headline-md text-primary">메모장</h2>
-            <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">자유롭게 메모를 작성하고 저장할 수 있습니다.</p>
-          </div>
-          <div class="flex items-center gap-xs">
-            <span id="memo-status" class="font-label-md text-[11px] text-on-surface-variant opacity-60"></span>
-            <button onclick="saveMemo()" class="flex items-center gap-xs bg-primary text-on-primary px-sm py-xs rounded-lg font-body-sm text-body-sm hover:opacity-90 transition-all active:scale-95">
-              <span class="material-symbols-outlined text-[18px]">save</span>
-              저장
-            </button>
-            <button onclick="clearMemo()" class="flex items-center gap-xs border border-outline-variant text-on-surface-variant px-sm py-xs rounded-lg font-body-sm text-body-sm hover:bg-surface-container transition-all">
-              <span class="material-symbols-outlined text-[18px]">delete</span>
-              초기화
-            </button>
-          </div>
-        </div>
-        <div class="bg-white border border-outline-variant rounded-xl overflow-hidden">
-          <textarea
-            id="memo-textarea"
-            class="w-full h-[320px] p-lg font-body-sm text-body-sm text-on-surface resize-none focus:outline-none leading-relaxed"
-            placeholder="여기에 메모를 입력하세요..."
-            oninput="onMemoInput()"
-          ></textarea>
-        </div>
       </div>
 
       <!-- 파일 관리 -->
@@ -144,7 +111,6 @@
             <input type="file" id="file-input" class="hidden" onchange="uploadFile(event)">
           </label>
         </div>
-        <!-- 업로드 진행바 -->
         <div id="upload-progress-wrap" class="hidden mb-md">
           <div class="flex items-center justify-between mb-xs">
             <span id="upload-filename" class="font-body-sm text-body-sm text-on-surface"></span>
@@ -154,8 +120,29 @@
             <div id="upload-progress-bar" class="bg-secondary h-2 rounded-full transition-all" style="width:0%"></div>
           </div>
         </div>
-        <!-- 파일 목록 -->
         <div id="file-list" class="flex flex-col gap-xs"></div>
+      </div>
+
+      <!-- 메모장 -->
+      <div class="mt-xl">
+        <div class="flex items-center justify-between mb-md">
+          <div>
+            <h2 class="font-headline-md text-headline-md text-primary">메모장</h2>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">자유롭게 메모를 작성하고 저장할 수 있습니다.</p>
+          </div>
+          <div class="flex items-center gap-xs">
+            <span id="memo-status" class="font-label-md text-[11px] text-on-surface-variant opacity-60"></span>
+            <button onclick="saveMemo()" class="flex items-center gap-xs bg-primary text-on-primary px-sm py-xs rounded-lg font-body-sm text-body-sm hover:opacity-90 transition-all active:scale-95">
+              <span class="material-symbols-outlined text-[18px]">save</span>저장
+            </button>
+            <button onclick="clearMemo()" class="flex items-center gap-xs border border-outline-variant text-on-surface-variant px-sm py-xs rounded-lg font-body-sm text-body-sm hover:bg-surface-container transition-all">
+              <span class="material-symbols-outlined text-[18px]">delete</span>초기화
+            </button>
+          </div>
+        </div>
+        <div class="bg-white border border-outline-variant rounded-xl overflow-hidden">
+          <textarea id="memo-textarea" class="w-full h-[320px] p-lg font-body-sm text-body-sm text-on-surface resize-none focus:outline-none leading-relaxed" placeholder="여기에 메모를 입력하세요..." oninput="onMemoInput()"></textarea>
+        </div>
       </div>
 
       <!-- Footer Management -->
@@ -394,28 +381,74 @@
   }
 
   // ── 파일 관리 ──
-  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 개별 100MB
+  const MAX_TOTAL_SIZE = 4 * 1024 * 1024 * 1024; // 전체 4GB
+
+  function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  async function getTotalSize() {
+    const filesRef = ref(storage, 'files/');
+    const result = await listAll(filesRef);
+    const sizes = await Promise.all(result.items.map(async item => {
+      const url = await getDownloadURL(item);
+      // 메타데이터로 크기 가져오기
+      const { getMetadata } = await import("https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js");
+      const meta = await getMetadata(item);
+      return meta.size;
+    }));
+    return sizes.reduce((a, b) => a + b, 0);
+  }
 
   async function loadFiles() {
     const list = document.getElementById('file-list');
     list.innerHTML = `<div class="text-center py-sm"><span class="font-body-sm text-body-sm text-on-surface-variant opacity-50">파일 목록 불러오는 중...</span></div>`;
     try {
+      const { getMetadata } = await import("https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js");
       const filesRef = ref(storage, 'files/');
       const result = await listAll(filesRef);
-      if (result.items.length === 0) {
-        list.innerHTML = `<div class="bg-white border border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center text-center min-h-[100px] gap-sm">
+
+      // 전체 용량 계산
+      let totalSize = 0;
+      const items = await Promise.all(result.items.map(async item => {
+        const [url, meta] = await Promise.all([getDownloadURL(item), getMetadata(item)]);
+        totalSize += meta.size;
+        return { name: item.name, url, fullPath: item.fullPath, size: meta.size };
+      }));
+
+      // 용량 바 업데이트
+      const pct = Math.min((totalSize / MAX_TOTAL_SIZE) * 100, 100);
+      const barColor = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-orange-400' : 'bg-secondary';
+      const storageBar = `
+        <div class="bg-white border border-outline-variant rounded-xl p-sm mb-sm">
+          <div class="flex items-center justify-between mb-xs">
+            <span class="font-label-md text-label-md text-on-surface-variant">전체 용량</span>
+            <span class="font-label-md text-[11px] text-on-surface-variant">${formatBytes(totalSize)} / 4 GB</span>
+          </div>
+          <div class="w-full bg-surface-container rounded-full h-2">
+            <div class="${barColor} h-2 rounded-full transition-all" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+
+      if (items.length === 0) {
+        list.innerHTML = storageBar + `<div class="bg-white border border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center text-center min-h-[100px] gap-sm">
           <span class="material-symbols-outlined text-[40px] text-on-surface-variant opacity-30">folder_open</span>
           <p class="font-body-sm text-body-sm text-on-surface-variant opacity-50">업로드된 파일이 없습니다.</p></div>`;
         return;
       }
-      const items = await Promise.all(result.items.map(async item => {
-        const url = await getDownloadURL(item);
-        return { name: item.name, url, fullPath: item.fullPath };
-      }));
-      list.innerHTML = items.map(file => `
+
+      list.innerHTML = storageBar + items.map(file => `
         <div class="bg-white border border-outline-variant rounded-xl px-lg py-sm flex items-center gap-sm">
           <span class="material-symbols-outlined text-[22px] text-secondary flex-shrink-0">insert_drive_file</span>
-          <span class="font-body-sm text-body-sm text-on-surface flex-1 truncate">${file.name}</span>
+          <div class="flex-1 min-w-0">
+            <p class="font-body-sm text-body-sm text-on-surface truncate">${file.name}</p>
+            <p class="font-label-md text-[11px] text-on-surface-variant opacity-60">${formatBytes(file.size)}</p>
+          </div>
           <a href="${file.url}" target="_blank" class="flex items-center gap-xs border border-outline-variant text-on-surface-variant px-xs py-[4px] rounded-lg font-label-md text-[12px] hover:bg-surface-container transition-all flex-shrink-0">
             <span class="material-symbols-outlined text-[16px]">download</span>다운로드
           </a>
@@ -431,11 +464,31 @@
   window.uploadFile = async function(e) {
     const file = e.target.files[0];
     if (!file) return;
+
+    // 개별 100MB 체크
     if (file.size > MAX_FILE_SIZE) {
       alert('파일 크기가 100MB를 초과합니다.');
       e.target.value = '';
       return;
     }
+
+    // 전체 4GB 체크
+    try {
+      const { getMetadata } = await import("https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js");
+      const filesRef = ref(storage, 'files/');
+      const result = await listAll(filesRef);
+      const sizes = await Promise.all(result.items.map(async item => {
+        const meta = await getMetadata(item);
+        return meta.size;
+      }));
+      const totalSize = sizes.reduce((a, b) => a + b, 0);
+      if (totalSize + file.size > MAX_TOTAL_SIZE) {
+        alert(`전체 용량 한도(4GB)를 초과합니다.\n현재 사용: ${formatBytes(totalSize)}\n남은 용량: ${formatBytes(MAX_TOTAL_SIZE - totalSize)}`);
+        e.target.value = '';
+        return;
+      }
+    } catch(err) { console.error(err); }
+
     const progressWrap = document.getElementById('upload-progress-wrap');
     const progressBar = document.getElementById('upload-progress-bar');
     const progressPercent = document.getElementById('upload-percent');

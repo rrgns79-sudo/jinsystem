@@ -168,6 +168,15 @@
     <div id="todo-list" class="flex flex-col gap-xs"></div>
   </div>
 
+  <!-- 파일 다운로드 -->
+  <div class="mt-xl mb-md">
+    <div class="mb-md">
+      <h2 class="font-headline-lg text-headline-lg text-primary mb-sm">파일</h2>
+      <div class="w-16 h-1 bg-secondary"></div>
+    </div>
+    <div id="monitoring-file-list" class="flex flex-col gap-xs"></div>
+  </div>
+
 </div>
 </section>
 </main>
@@ -183,6 +192,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
   import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+  import { getStorage, ref, getDownloadURL, listAll } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBUT5XZu-tFBboGb0UZcy7qCTn41ya3d5Y",
@@ -195,6 +205,7 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const storage = getStorage(app);
 
   const DEFAULT_CARDS = [
     { id: 1, name: '제주 버스 GNSS IoT', url: 'http://112.164.247.109/login', icon: 'lan', active: true },
@@ -211,6 +222,34 @@
     '중간': { dot: 'bg-yellow-400', text: 'text-yellow-600', bg: 'bg-yellow-50 border-yellow-200' },
     '낮음': { dot: 'bg-green-500', text: 'text-green-600', bg: 'bg-green-50 border-green-200' },
   };
+
+  async function loadFiles() {
+    const list = document.getElementById('monitoring-file-list');
+    try {
+      const filesRef = ref(storage, 'files/');
+      const result = await listAll(filesRef);
+      if (result.items.length === 0) {
+        list.innerHTML = `<div class="bg-white border border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center text-center min-h-[80px] gap-sm">
+          <span class="material-symbols-outlined text-[36px] text-on-surface-variant opacity-30">folder_open</span>
+          <p class="font-body-sm text-body-sm text-on-surface-variant opacity-50">업로드된 파일이 없습니다.</p></div>`;
+        return;
+      }
+      const items = await Promise.all(result.items.map(async item => {
+        const url = await getDownloadURL(item);
+        return { name: item.name, url };
+      }));
+      list.innerHTML = items.map(file => `
+        <div class="bg-white border border-outline-variant rounded-xl px-lg py-sm flex items-center gap-sm">
+          <span class="material-symbols-outlined text-[22px] text-secondary flex-shrink-0">insert_drive_file</span>
+          <span class="font-body-sm text-body-sm text-on-surface flex-1 truncate">${file.name}</span>
+          <a href="${file.url}" target="_blank" class="flex items-center gap-xs bg-secondary text-white px-sm py-[6px] rounded-lg font-label-md text-[12px] hover:opacity-90 transition-all flex-shrink-0">
+            <span class="material-symbols-outlined text-[16px]">download</span>다운로드
+          </a>
+        </div>`).join('');
+    } catch(e) {
+      list.innerHTML = '';
+    }
+  }
 
   async function loadAll() {
     // 카드
@@ -231,6 +270,9 @@
     document.getElementById('footer-year').textContent = `© ${f.year} JINSYSTEM. All rights reserved.`;
     document.getElementById('footer-address').textContent = f.address;
     document.getElementById('footer-phone').textContent = f.phone;
+
+    // 파일
+    await loadFiles();
   }
 
   function renderMonitoringCards(cards) {
