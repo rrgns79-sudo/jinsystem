@@ -235,11 +235,14 @@
 
   function renderMonitoringCards(cards) {
     const grid = document.getElementById('monitoring-grid');
-    grid.innerHTML = cards.map(card => `
-      <a class="glass-card rounded-xl p-lg shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group flex flex-col h-full ${!card.active ? 'opacity-40 pointer-events-none' : ''}"
+    grid.innerHTML = cards.map((card, idx) => {
+      const cardColor = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+      const borderClass = card.active ? cardColor.tab.replace('bg-', 'border-').split(' ')[0] : 'border-gray-200';
+      return `
+      <a class="glass-card rounded-xl p-lg shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group flex flex-col h-full border-2 ${borderClass} ${!card.active ? 'opacity-40 pointer-events-none' : ''}"
          href="${card.url}" target="_blank">
         <div class="flex justify-between items-start mb-lg">
-          <div class="w-12 h-12 rounded-full ${card.active ? 'bg-secondary/10 text-secondary group-hover:bg-secondary group-hover:text-white' : 'bg-gray-100 text-gray-400'} flex items-center justify-center transition-colors duration-300">
+          <div class="w-12 h-12 rounded-full ${card.active ? cardColor.badge : 'bg-gray-100 text-gray-400'} flex items-center justify-center transition-colors duration-300">
             <span class="material-symbols-outlined text-[28px]">${card.icon}</span>
           </div>
           <div class="flex items-center gap-xs ${card.active ? 'bg-green-100' : 'bg-gray-100'} px-xs py-[2px] rounded-full">
@@ -252,8 +255,8 @@
           <span>LAUNCH PLATFORM</span>
           <span class="material-symbols-outlined text-sm ml-1">open_in_new</span>
         </div>
-      </a>
-    `).join('');
+      </a>`;
+    }).join('');
   }
 
   const CATEGORY_COLORS = [

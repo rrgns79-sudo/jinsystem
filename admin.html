@@ -399,8 +399,12 @@
         </div>`;
       return;
     }
-    grid.innerHTML = cards.map(card => `
-      <div class="bg-white rounded-xl border border-outline-variant shadow-sm p-lg flex flex-col gap-md transition-all duration-300 ${!card.active ? 'opacity-50' : ''} cursor-grab active:cursor-grabbing"
+    grid.innerHTML = cards.map((card, idx) => {
+      const cardColor = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+      const borderClass = card.active ? cardColor.tab.replace('bg-', 'border-').split(' ')[0] : 'border-outline-variant';
+      const iconBg = card.active ? cardColor.badge : 'bg-surface-container text-on-surface-variant';
+      return `
+      <div class="bg-white rounded-xl border-2 ${borderClass} shadow-sm p-lg flex flex-col gap-md transition-all duration-300 ${!card.active ? 'opacity-50' : ''} cursor-grab active:cursor-grabbing"
         draggable="true"
         data-card-id="${card.id}"
         ondragstart="onCardDragStart(event)"
@@ -410,7 +414,7 @@
         <div class="flex justify-between items-start">
           <div class="flex items-center gap-xs">
             <span class="material-symbols-outlined text-[18px] text-on-surface-variant opacity-40 cursor-grab">drag_indicator</span>
-            <div class="w-12 h-12 rounded-full ${card.active ? 'bg-blue-50 text-secondary' : 'bg-surface-container text-on-surface-variant'} flex items-center justify-center transition-colors">
+            <div class="w-12 h-12 rounded-full ${iconBg} flex items-center justify-center transition-colors">
               <span class="material-symbols-outlined text-[28px]">${card.icon}</span>
             </div>
           </div>
@@ -432,8 +436,8 @@
             <span class="material-symbols-outlined text-[16px]">delete</span>삭제
           </button>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   }
 
   // 카드 드래그 앤 드롭
