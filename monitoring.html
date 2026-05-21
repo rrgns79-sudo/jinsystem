@@ -261,10 +261,24 @@
 
     list.innerHTML = filtered.map(todo => {
       const p = PRIORITY_CONFIG[todo.priority] || PRIORITY_CONFIG['낮음'];
-      const today = new Date().toISOString().split('T')[0];
-      const isOverdue = todo.deadline && !todo.done && todo.deadline < today;
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const todayStr = today.toISOString().split('T')[0];
+      const isOverdue = todo.deadline && !todo.done && todo.deadline < todayStr;
+
+      let ddayText = '';
+      let ddayStyle = '';
+      if (todo.deadline) {
+        const deadline = new Date(todo.deadline);
+        deadline.setHours(0,0,0,0);
+        const diff = Math.round((deadline - today) / (1000 * 60 * 60 * 24));
+        if (diff === 0) { ddayText = 'D-Day'; ddayStyle = 'bg-red-500 text-white'; }
+        else if (diff > 0) { ddayText = `D-${diff}`; ddayStyle = diff <= 3 ? 'bg-orange-100 text-orange-600' : 'bg-blue-50 text-secondary'; }
+        else { ddayText = `D+${Math.abs(diff)}`; ddayStyle = 'bg-red-50 text-red-500'; }
+      }
+
       const deadlineText = todo.deadline
-        ? `<span class="font-label-md text-[11px] ${isOverdue ? 'text-red-500 font-bold' : 'text-on-surface-variant opacity-60'}">${isOverdue ? '⚠ 기한 초과 · ' : ''}${todo.deadline}</span>`
+        ? `<span class="font-label-md text-[11px] ${isOverdue && !todo.done ? 'text-red-500 font-bold' : 'text-on-surface-variant opacity-60'}">${isOverdue && !todo.done ? '⚠ 기한 초과 · ' : ''}${todo.deadline}</span>`
         : '';
 
       return `
@@ -282,7 +296,10 @@
             </span>
             <span class="font-label-md text-[10px] bg-surface-container text-on-surface-variant px-xs py-[1px] rounded-full">${todo.category}</span>
           </div>
-          ${deadlineText ? `<div class="mt-[2px]">${deadlineText}</div>` : ''}
+          ${deadlineText ? `<div class="mt-[2px] flex items-center gap-xs">
+            ${deadlineText}
+            ${ddayText && !todo.done ? `<span class="font-label-md text-[10px] font-bold px-xs py-[1px] rounded-full ${ddayStyle}">${ddayText}</span>` : ''}
+          </div>` : ''}
         </div>
       </div>`;
     }).join('');
