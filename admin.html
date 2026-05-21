@@ -587,12 +587,34 @@
 
   function getCardCategories() { return [...cards.map(c => c.name), '기타']; }
 
+  const CATEGORY_COLORS = [
+    { tab: 'bg-blue-500 text-white border-blue-500', badge: 'bg-blue-50 text-blue-600 border-blue-200' },
+    { tab: 'bg-green-500 text-white border-green-500', badge: 'bg-green-50 text-green-600 border-green-200' },
+    { tab: 'bg-sky-500 text-white border-sky-500', badge: 'bg-sky-50 text-sky-600 border-sky-200' },
+    { tab: 'bg-purple-500 text-white border-purple-500', badge: 'bg-purple-50 text-purple-600 border-purple-200' },
+    { tab: 'bg-orange-500 text-white border-orange-500', badge: 'bg-orange-50 text-orange-600 border-orange-200' },
+    { tab: 'bg-pink-500 text-white border-pink-500', badge: 'bg-pink-50 text-pink-600 border-pink-200' },
+  ];
+  const CATEGORY_GRAY = { tab: 'bg-gray-400 text-white border-gray-400', badge: 'bg-gray-100 text-gray-500 border-gray-200' };
+
+  function getCategoryColor(category) {
+    const names = cards.map(c => c.name);
+    const idx = names.indexOf(category);
+    if (idx >= 0) return CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+    return CATEGORY_GRAY;
+  }
+
   function renderTodoFilterTabs() {
     const categories = ['전체', ...getCardCategories()];
     const container = document.getElementById('todo-filter-tabs');
-    container.innerHTML = categories.map(cat => `
-      <button onclick="setTodoFilter('${cat}')" class="px-sm py-[6px] rounded-full font-label-md text-[12px] border transition-all ${cat === currentFilter ? 'bg-primary text-white border-primary' : 'text-on-surface-variant border-outline-variant'}">${cat}</button>
-    `).join('');
+    container.innerHTML = categories.map(cat => {
+      const isActive = cat === currentFilter;
+      if (cat === '전체') {
+        return `<button onclick="setTodoFilter('${cat}')" class="px-sm py-[6px] rounded-full font-label-md text-[12px] border transition-all ${isActive ? 'bg-primary text-white border-primary' : 'text-on-surface-variant border-outline-variant'}">${cat}</button>`;
+      }
+      const color = getCategoryColor(cat);
+      return `<button onclick="setTodoFilter('${cat}')" class="px-sm py-[6px] rounded-full font-label-md text-[12px] border transition-all ${isActive ? color.tab : 'text-on-surface-variant border-outline-variant'}">${cat}</button>`;
+    }).join('');
   }
 
   function renderTodoCategorySelect(selectedValue) {
@@ -626,6 +648,7 @@
         else if (diff > 0) { ddayText = `D-${diff}`; ddayStyle = diff <= 3 ? 'bg-orange-100 text-orange-600' : 'bg-blue-50 text-secondary'; }
         else { ddayText = `D+${Math.abs(diff)}`; ddayStyle = 'bg-red-50 text-red-500'; }
       }
+      const catColor = getCategoryColor(todo.category);
       const deadlineText = todo.deadline
         ? `<span class="font-label-md text-[11px] ${isOverdue && !todo.done ? 'text-red-500 font-bold' : 'text-on-surface-variant opacity-60'}">${isOverdue && !todo.done ? '⚠ 기한 초과 · ' : ''}${todo.deadline}</span>` : '';
       return `
@@ -641,7 +664,7 @@
           <div class="flex items-center gap-xs flex-wrap">
             <span class="font-body-sm text-body-sm ${todo.done ? 'line-through text-on-surface-variant' : 'text-on-surface'}">${todo.title}</span>
             <span class="inline-flex items-center gap-[3px] px-xs py-[1px] rounded-full border ${p.bg}"><span class="w-[6px] h-[6px] rounded-full ${p.dot}"></span><span class="font-label-md text-[10px] ${p.text}">${todo.priority}</span></span>
-            <span class="font-label-md text-[10px] bg-surface-container text-on-surface-variant px-xs py-[1px] rounded-full">${todo.category}</span>
+            <span class="font-label-md text-[10px] border px-xs py-[1px] rounded-full ${catColor.badge}">${todo.category}</span>
           </div>
           ${deadlineText ? `<div class="mt-[2px] flex items-center gap-xs">${deadlineText}${ddayText && !todo.done ? `<span class="font-label-md text-[10px] font-bold px-xs py-[1px] rounded-full ${ddayStyle}">${ddayText}</span>` : ''}</div>` : ''}
         </div>
