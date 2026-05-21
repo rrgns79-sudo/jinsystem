@@ -153,6 +153,21 @@
     <div class="w-16 h-1 bg-secondary mx-auto"></div>
   </div>
   <div id="monitoring-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter"></div>
+
+  <!-- To-Do 게시판 -->
+  <div class="mt-xl mb-md">
+    <div class="flex items-center justify-between mb-md">
+      <div>
+        <h2 class="font-headline-lg text-headline-lg text-primary mb-sm">To-Do List</h2>
+        <div class="w-16 h-1 bg-secondary"></div>
+      </div>
+    </div>
+    <!-- 카테고리 필터 -->
+    <div class="flex flex-wrap gap-xs mb-md" id="todo-filter-tabs"></div>
+    <!-- To-Do 리스트 -->
+    <div id="todo-list" class="flex flex-col gap-xs"></div>
+  </div>
+
 </div>
 </section>
 </main>
@@ -200,6 +215,80 @@
   }
 
   renderMonitoringCards();
+
+  // To-Do 게시판
+  const PRIORITY_CONFIG = {
+    '높음': { dot: 'bg-red-500', text: 'text-red-600', bg: 'bg-red-50 border-red-200' },
+    '중간': { dot: 'bg-yellow-400', text: 'text-yellow-600', bg: 'bg-yellow-50 border-yellow-200' },
+    '낮음': { dot: 'bg-green-500', text: 'text-green-600', bg: 'bg-green-50 border-green-200' },
+  };
+
+  let currentFilter = '전체';
+
+  function getCards() {
+    const saved = localStorage.getItem('jinsystem_cards');
+    return saved ? JSON.parse(saved) : [];
+  }
+
+  function renderTodoFilterTabs() {
+    const cardNames = getCards().map(c => c.name);
+    const categories = ['전체', ...cardNames, '기타'];
+    const container = document.getElementById('todo-filter-tabs');
+    container.innerHTML = categories.map(cat => `
+      <button onclick="setTodoFilter('${cat}')" class="px-sm py-[6px] rounded-full font-label-md text-[12px] border transition-all ${cat === currentFilter ? 'bg-secondary text-white border-secondary' : 'text-on-surface-variant border-outline-variant bg-white'}">${cat}</button>
+    `).join('');
+  }
+
+  function setTodoFilter(filter) {
+    currentFilter = filter;
+    renderTodoFilterTabs();
+    renderTodos();
+  }
+
+  function renderTodos() {
+    const todos = JSON.parse(localStorage.getItem('jinsystem_todos') || '[]');
+    const filtered = currentFilter === '전체' ? todos : todos.filter(t => t.category === currentFilter);
+    const list = document.getElementById('todo-list');
+
+    if (filtered.length === 0) {
+      list.innerHTML = `
+        <div class="bg-white border border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center text-center min-h-[100px] gap-sm">
+          <span class="material-symbols-outlined text-[36px] text-on-surface-variant opacity-30">check_circle</span>
+          <p class="font-body-sm text-body-sm text-on-surface-variant opacity-50">할 일이 없습니다.</p>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(todo => {
+      const p = PRIORITY_CONFIG[todo.priority] || PRIORITY_CONFIG['낮음'];
+      const today = new Date().toISOString().split('T')[0];
+      const isOverdue = todo.deadline && !todo.done && todo.deadline < today;
+      const deadlineText = todo.deadline
+        ? `<span class="font-label-md text-[11px] ${isOverdue ? 'text-red-500 font-bold' : 'text-on-surface-variant opacity-60'}">${isOverdue ? '⚠ 기한 초과 · ' : ''}${todo.deadline}</span>`
+        : '';
+
+      return `
+      <div class="bg-white border border-outline-variant rounded-xl px-lg py-sm flex items-center gap-sm ${todo.done ? 'opacity-50' : ''}">
+        <div class="flex-shrink-0 w-5 h-5 rounded-full border-2 ${todo.done ? 'bg-secondary border-secondary' : 'border-outline-variant'} flex items-center justify-center">
+          ${todo.done ? '<span class="material-symbols-outlined text-white text-[14px]">check</span>' : ''}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-xs flex-wrap">
+            <span class="font-body-sm text-body-sm ${todo.done ? 'line-through text-on-surface-variant' : 'text-on-surface'}">${todo.title}</span>
+            <span class="inline-flex items-center gap-[3px] px-xs py-[1px] rounded-full border ${p.bg}">
+              <span class="w-[6px] h-[6px] rounded-full ${p.dot}"></span>
+              <span class="font-label-md text-[10px] ${p.text}">${todo.priority}</span>
+            </span>
+            <span class="font-label-md text-[10px] bg-surface-container text-on-surface-variant px-xs py-[1px] rounded-full">${todo.category}</span>
+          </div>
+          ${deadlineText ? `<div class="mt-[2px]">${deadlineText}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  renderTodoFilterTabs();
+  renderTodos();
 
   // Footer 렌더링
   const DEFAULT_FOOTER = { year: '2018', address: '제주시 연삼로 10 4층 JINSYSTEM', phone: '064-722-0442' };

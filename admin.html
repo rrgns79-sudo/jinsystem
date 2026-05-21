@@ -82,6 +82,26 @@
       <!-- Cards Grid -->
       <div id="cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter"></div>
 
+      <!-- To-Do 게시판 -->
+      <div class="mt-xl">
+        <div class="flex items-center justify-between mb-md">
+          <div>
+            <h2 class="font-headline-md text-headline-md text-primary">To-Do List</h2>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">카드별로 할 일을 관리하고 데드라인을 설정하세요.</p>
+          </div>
+          <button onclick="openTodoModal()" class="flex items-center gap-xs bg-primary text-on-primary px-sm py-xs rounded-lg font-body-sm text-body-sm hover:opacity-90 transition-all active:scale-95 shadow-sm">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            할 일 추가
+          </button>
+        </div>
+
+        <!-- 카테고리 필터 -->
+        <div class="flex flex-wrap gap-xs mb-md" id="todo-filter-tabs"></div>
+
+        <!-- To-Do 리스트 -->
+        <div id="todo-list" class="flex flex-col gap-xs"></div>
+      </div>
+
       <!-- 메모장 -->
       <div class="mt-xl">
         <div class="flex items-center justify-between mb-md">
@@ -233,6 +253,44 @@
   </div>
 </div>
 
+<!-- Todo Add/Edit Modal -->
+<div id="todo-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 modal-overlay hidden">
+  <div class="bg-white rounded-xl shadow-2xl p-lg w-full max-w-sm mx-margin border border-outline-variant">
+    <div class="flex items-center justify-between mb-md">
+      <h3 id="todo-modal-title" class="font-headline-md text-headline-md text-primary">할 일 추가</h3>
+      <button onclick="closeTodoModal()" class="text-on-surface-variant hover:text-primary transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="flex flex-col gap-sm">
+      <div>
+        <label class="font-label-md text-label-md text-on-surface-variant mb-xs block">할 일</label>
+        <input id="todo-input-title" type="text" class="w-full border border-outline-variant rounded-lg px-sm py-xs font-body-sm text-body-sm focus:outline-none focus:border-secondary" placeholder="할 일을 입력하세요">
+      </div>
+      <div>
+        <label class="font-label-md text-label-md text-on-surface-variant mb-xs block">카드 분류</label>
+        <select id="todo-input-category" class="w-full border border-outline-variant rounded-lg px-sm py-xs font-body-sm text-body-sm focus:outline-none focus:border-secondary bg-white"></select>
+      </div>
+      <div>
+        <label class="font-label-md text-label-md text-on-surface-variant mb-xs block">우선순위</label>
+        <select id="todo-input-priority" class="w-full border border-outline-variant rounded-lg px-sm py-xs font-body-sm text-body-sm focus:outline-none focus:border-secondary bg-white">
+          <option value="높음">🔴 높음</option>
+          <option value="중간">🟡 중간</option>
+          <option value="낮음">🟢 낮음</option>
+        </select>
+      </div>
+      <div>
+        <label class="font-label-md text-label-md text-on-surface-variant mb-xs block">데드라인</label>
+        <input id="todo-input-deadline" type="date" class="w-full border border-outline-variant rounded-lg px-sm py-xs font-body-sm text-body-sm focus:outline-none focus:border-secondary">
+      </div>
+    </div>
+    <div class="flex gap-sm mt-lg">
+      <button onclick="closeTodoModal()" class="flex-1 border border-outline-variant text-on-surface-variant py-xs rounded-lg font-body-sm text-body-sm hover:bg-surface-container transition-all">취소</button>
+      <button onclick="saveTodo()" class="flex-1 bg-primary text-on-primary py-xs rounded-lg font-body-sm text-body-sm hover:opacity-90 transition-all active:scale-95">저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- Footer Edit Modal -->
 <div id="footer-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 modal-overlay hidden">
   <div class="bg-white rounded-xl shadow-2xl p-lg w-full max-w-sm mx-margin border border-outline-variant">
@@ -326,6 +384,7 @@
     cards = cards.map(c => c.id === id ? { ...c, active: !c.active } : c);
     saveCards();
     renderCards();
+    renderTodoFilterTabs();
   }
 
   function openEditModal(id) {
@@ -351,6 +410,7 @@
     saveCards();
     closeEditModal();
     renderCards();
+    renderTodoFilterTabs();
   }
 
   function openAddModal() {
@@ -372,6 +432,7 @@
     saveCards();
     closeAddModal();
     renderCards();
+    renderTodoFilterTabs();
   }
 
   function openDeleteModal(id) {
@@ -387,6 +448,7 @@
     saveCards();
     closeDeleteModal();
     renderCards();
+    renderTodoFilterTabs();
   }
 
   ['edit-modal', 'add-modal', 'delete-modal', 'footer-modal'].forEach(id => {
@@ -480,5 +542,161 @@
   renderCards();
   renderFooter();
   loadMemo();
+
+  // ── To-Do 게시판 ──
+  let todos = JSON.parse(localStorage.getItem('jinsystem_todos') || '[]');
+  let todoEditingId = null;
+  let currentFilter = '전체';
+
+  const PRIORITY_CONFIG = {
+    '높음': { dot: 'bg-red-500', text: 'text-red-600', bg: 'bg-red-50 border-red-200' },
+    '중간': { dot: 'bg-yellow-400', text: 'text-yellow-600', bg: 'bg-yellow-50 border-yellow-200' },
+    '낮음': { dot: 'bg-green-500', text: 'text-green-600', bg: 'bg-green-50 border-green-200' },
+  };
+
+  function getCardCategories() {
+    return [...cards.map(c => c.name), '기타'];
+  }
+
+  function renderTodoFilterTabs() {
+    const categories = ['전체', ...getCardCategories()];
+    const container = document.getElementById('todo-filter-tabs');
+    container.innerHTML = categories.map(cat => `
+      <button onclick="setTodoFilter('${cat}')" class="todo-filter-btn px-sm py-[6px] rounded-full font-label-md text-[12px] border transition-all ${cat === currentFilter ? 'bg-primary text-white border-primary' : 'text-on-surface-variant border-outline-variant'}">${cat}</button>
+    `).join('');
+  }
+
+  function renderTodoCategorySelect(selectedValue) {
+    const categories = getCardCategories();
+    const select = document.getElementById('todo-input-category');
+    select.innerHTML = categories.map(cat =>
+      `<option value="${cat}" ${cat === selectedValue ? 'selected' : ''}>${cat}</option>`
+    ).join('');
+  }
+
+  function saveTodos() {
+    localStorage.setItem('jinsystem_todos', JSON.stringify(todos));
+  }
+
+  function setTodoFilter(filter) {
+    currentFilter = filter;
+    renderTodoFilterTabs();
+    renderTodos();
+  }
+
+  function renderTodos() {
+    const list = document.getElementById('todo-list');
+    const filtered = currentFilter === '전체' ? todos : todos.filter(t => t.category === currentFilter);
+
+    if (filtered.length === 0) {
+      list.innerHTML = `
+        <div class="bg-white border border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center text-center min-h-[120px] gap-sm">
+          <span class="material-symbols-outlined text-[40px] text-on-surface-variant opacity-30">check_circle</span>
+          <p class="font-body-sm text-body-sm text-on-surface-variant opacity-50">할 일이 없습니다.</p>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(todo => {
+      const p = PRIORITY_CONFIG[todo.priority] || PRIORITY_CONFIG['낮음'];
+      const today = new Date().toISOString().split('T')[0];
+      const isOverdue = todo.deadline && !todo.done && todo.deadline < today;
+      const deadlineText = todo.deadline
+        ? `<span class="font-label-md text-[11px] ${isOverdue ? 'text-red-500 font-bold' : 'text-on-surface-variant opacity-60'}">${isOverdue ? '⚠ 기한 초과 · ' : ''}${todo.deadline}</span>`
+        : '';
+
+      return `
+      <div class="bg-white border border-outline-variant rounded-xl px-lg py-sm flex items-center gap-sm transition-all ${todo.done ? 'opacity-50' : ''}">
+        <button onclick="toggleTodoDone(${todo.id})" class="flex-shrink-0 w-5 h-5 rounded-full border-2 ${todo.done ? 'bg-secondary border-secondary' : 'border-outline-variant'} flex items-center justify-center transition-all">
+          ${todo.done ? '<span class="material-symbols-outlined text-white text-[14px]">check</span>' : ''}
+        </button>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-xs flex-wrap">
+            <span class="font-body-sm text-body-sm ${todo.done ? 'line-through text-on-surface-variant' : 'text-on-surface'}">${todo.title}</span>
+            <span class="inline-flex items-center gap-[3px] px-xs py-[1px] rounded-full border ${p.bg}">
+              <span class="w-[6px] h-[6px] rounded-full ${p.dot}"></span>
+              <span class="font-label-md text-[10px] ${p.text}">${todo.priority}</span>
+            </span>
+            <span class="font-label-md text-[10px] bg-surface-container text-on-surface-variant px-xs py-[1px] rounded-full">${todo.category}</span>
+          </div>
+          ${deadlineText ? `<div class="mt-[2px]">${deadlineText}</div>` : ''}
+        </div>
+        <div class="flex items-center gap-xs flex-shrink-0">
+          <button onclick="openTodoEditModal(${todo.id})" class="text-on-surface-variant hover:text-secondary transition-colors">
+            <span class="material-symbols-outlined text-[18px]">edit</span>
+          </button>
+          <button onclick="deleteTodo(${todo.id})" class="text-on-surface-variant hover:text-red-500 transition-colors">
+            <span class="material-symbols-outlined text-[18px]">delete</span>
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function openTodoModal() {
+    todoEditingId = null;
+    document.getElementById('todo-modal-title').textContent = '할 일 추가';
+    document.getElementById('todo-input-title').value = '';
+    renderTodoCategorySelect('');
+    document.getElementById('todo-input-priority').value = '중간';
+    document.getElementById('todo-input-deadline').value = '';
+    document.getElementById('todo-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('todo-input-title').focus(), 100);
+  }
+
+  function openTodoEditModal(id) {
+    todoEditingId = id;
+    const todo = todos.find(t => t.id === id);
+    document.getElementById('todo-modal-title').textContent = '할 일 수정';
+    document.getElementById('todo-input-title').value = todo.title;
+    renderTodoCategorySelect(todo.category);
+    document.getElementById('todo-input-priority').value = todo.priority;
+    document.getElementById('todo-input-deadline').value = todo.deadline || '';
+    document.getElementById('todo-modal').classList.remove('hidden');
+  }
+
+  function closeTodoModal() {
+    document.getElementById('todo-modal').classList.add('hidden');
+    todoEditingId = null;
+  }
+
+  function saveTodo() {
+    const title = document.getElementById('todo-input-title').value.trim();
+    const category = document.getElementById('todo-input-category').value;
+    const priority = document.getElementById('todo-input-priority').value;
+    const deadline = document.getElementById('todo-input-deadline').value;
+    if (!title) { alert('할 일을 입력해 주세요.'); return; }
+
+    if (todoEditingId !== null) {
+      todos = todos.map(t => t.id === todoEditingId ? { ...t, title, category, priority, deadline } : t);
+    } else {
+      const newId = todos.length > 0 ? Math.max(...todos.map(t => t.id)) + 1 : 1;
+      todos.push({ id: newId, title, category, priority, deadline, done: false });
+    }
+    saveTodos();
+    closeTodoModal();
+    renderTodos();
+  }
+
+  function toggleTodoDone(id) {
+    todos = todos.map(t => t.id === id ? { ...t, done: !t.done } : t);
+    saveTodos();
+    renderTodos();
+  }
+
+  function deleteTodo(id) {
+    if (!confirm('이 항목을 삭제하시겠습니까?')) return;
+    todos = todos.filter(t => t.id !== id);
+    saveTodos();
+    renderTodos();
+  }
+
+  document.getElementById('todo-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeTodoModal();
+  });
+
+  // 필터 탭 + To-Do 초기 렌더링
+  renderTodoFilterTabs();
+  renderTodos();
 </script>
 </body></html>
