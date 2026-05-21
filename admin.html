@@ -351,10 +351,19 @@
       return;
     }
     grid.innerHTML = cards.map(card => `
-      <div class="bg-white rounded-xl border border-outline-variant shadow-sm p-lg flex flex-col gap-md transition-all duration-300 ${!card.active ? 'opacity-50' : ''}">
+      <div class="bg-white rounded-xl border border-outline-variant shadow-sm p-lg flex flex-col gap-md transition-all duration-300 ${!card.active ? 'opacity-50' : ''} cursor-grab active:cursor-grabbing"
+        draggable="true"
+        data-card-id="${card.id}"
+        ondragstart="onCardDragStart(event)"
+        ondragover="onCardDragOver(event)"
+        ondrop="onCardDrop(event)"
+        ondragend="onCardDragEnd(event)">
         <div class="flex justify-between items-start">
-          <div class="w-12 h-12 rounded-full ${card.active ? 'bg-blue-50 text-secondary' : 'bg-surface-container text-on-surface-variant'} flex items-center justify-center transition-colors">
-            <span class="material-symbols-outlined text-[28px]">${card.icon}</span>
+          <div class="flex items-center gap-xs">
+            <span class="material-symbols-outlined text-[18px] text-on-surface-variant opacity-40 cursor-grab">drag_indicator</span>
+            <div class="w-12 h-12 rounded-full ${card.active ? 'bg-blue-50 text-secondary' : 'bg-surface-container text-on-surface-variant'} flex items-center justify-center transition-colors">
+              <span class="material-symbols-outlined text-[28px]">${card.icon}</span>
+            </div>
           </div>
           <div class="flex items-center gap-xs">
             <span class="font-label-md text-[10px] ${card.active ? 'text-green-600' : 'text-on-surface-variant'} font-bold uppercase">${card.active ? 'Active' : 'Inactive'}</span>
@@ -378,6 +387,35 @@
         </div>
       </div>
     `).join('');
+  }
+
+  // 카드 드래그 앤 드롭
+  let dragCardId = null;
+  function onCardDragStart(e) {
+    dragCardId = parseInt(e.currentTarget.dataset.cardId);
+    e.currentTarget.classList.add('opacity-30');
+  }
+  function onCardDragOver(e) {
+    e.preventDefault();
+    e.currentTarget.classList.add('ring-2', 'ring-secondary');
+  }
+  function onCardDrop(e) {
+    e.preventDefault();
+    const targetId = parseInt(e.currentTarget.dataset.cardId);
+    if (dragCardId === targetId) return;
+    const fromIdx = cards.findIndex(c => c.id === dragCardId);
+    const toIdx = cards.findIndex(c => c.id === targetId);
+    const reordered = [...cards];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+    cards = reordered;
+    saveCards();
+    renderCards();
+    renderTodoFilterTabs();
+  }
+  function onCardDragEnd(e) {
+    e.currentTarget.classList.remove('opacity-30');
+    document.querySelectorAll('[data-card-id]').forEach(el => el.classList.remove('ring-2', 'ring-secondary'));
   }
 
   function toggleActive(id) {
@@ -606,7 +644,14 @@
         : '';
 
       return `
-      <div class="bg-white border border-outline-variant rounded-xl px-lg py-sm flex items-center gap-sm transition-all ${todo.done ? 'opacity-50' : ''}">
+      <div class="bg-white border border-outline-variant rounded-xl px-lg py-sm flex items-center gap-sm transition-all ${todo.done ? 'opacity-50' : ''} cursor-grab active:cursor-grabbing"
+        draggable="true"
+        data-todo-id="${todo.id}"
+        ondragstart="onTodoDragStart(event)"
+        ondragover="onTodoDragOver(event)"
+        ondrop="onTodoDrop(event)"
+        ondragend="onTodoDragEnd(event)">
+        <span class="material-symbols-outlined text-[18px] text-on-surface-variant opacity-40 flex-shrink-0">drag_indicator</span>
         <button onclick="toggleTodoDone(${todo.id})" class="flex-shrink-0 w-5 h-5 rounded-full border-2 ${todo.done ? 'bg-secondary border-secondary' : 'border-outline-variant'} flex items-center justify-center transition-all">
           ${todo.done ? '<span class="material-symbols-outlined text-white text-[14px]">check</span>' : ''}
         </button>
@@ -631,6 +676,34 @@
         </div>
       </div>`;
     }).join('');
+  }
+
+  // To-Do 드래그 앤 드롭
+  let dragTodoId = null;
+  function onTodoDragStart(e) {
+    dragTodoId = parseInt(e.currentTarget.dataset.todoId);
+    e.currentTarget.classList.add('opacity-30');
+  }
+  function onTodoDragOver(e) {
+    e.preventDefault();
+    e.currentTarget.classList.add('ring-2', 'ring-secondary');
+  }
+  function onTodoDrop(e) {
+    e.preventDefault();
+    const targetId = parseInt(e.currentTarget.dataset.todoId);
+    if (dragTodoId === targetId) return;
+    const fromIdx = todos.findIndex(t => t.id === dragTodoId);
+    const toIdx = todos.findIndex(t => t.id === targetId);
+    const reordered = [...todos];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+    todos = reordered;
+    saveTodos();
+    renderTodos();
+  }
+  function onTodoDragEnd(e) {
+    e.currentTarget.classList.remove('opacity-30');
+    document.querySelectorAll('[data-todo-id]').forEach(el => el.classList.remove('ring-2', 'ring-secondary'));
   }
 
   function openTodoModal() {
